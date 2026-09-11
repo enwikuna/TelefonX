@@ -1,0 +1,6 @@
+"NSMicrophoneUsageDescription" = "TelefonX benötigt das Mikrofon für deine SIP-Telefonate.";
+"NSContactsUsageDescription" = "TelefonX zeigt auf deinen Wunsch Apple Kontakte mit Telefonnummern schreibgeschützt neben deinem internen Telefonbuch an.";
+"NSAppleEventsUsageDescription" = "TelefonX pausiert auf deinen Wunsch Apple Music und Spotify, sobald ein Gespräch beginnt.";
+"NSLocalNetworkUsageDescription" = "TelefonX verbindet sich mit SIP-Telefonanlagen in deinem lokalen Netzwerk, um Anrufe zu ermöglichen.";
+"NSFocusStatusUsageDescription" = "TelefonX kann seinen Modus „Nicht stören“ mit dem Fokusstatus deines Macs synchronisieren.";
+"NSHumanReadableCopyright" = "Copyright © 2025–2026 Enwikuna. Alle Rechte vorbehalten.";

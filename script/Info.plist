@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+    <key>CFBundleExecutable</key><string>TelefonX</string>
+    <key>CFBundleIdentifier</key><string>de.enwikuna.TelefonX</string>
+    <key>CFBundleName</key><string>TelefonX</string>
+    <key>CFBundleDisplayName</key><string>TelefonX</string>
+    <key>CFBundleIconFile</key><string>TelefonXAppIcon</string>
+    <key>CFBundleIconName</key><string>TelefonXAppIcon</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>1.0.0</string>
+    <key>CFBundleVersion</key><string>1</string>
+    <key>NSHumanReadableCopyright</key><string>Copyright © 2025–2026 Enwikuna. All rights reserved.</string>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>LSMinimumSystemVersion</key><string>26.0</string>
+    <key>LSArchitecturePriority</key><array><string>arm64</string></array>
+    <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
+    <key>NSPrincipalClass</key><string>NSApplication</string>
+    <key>NSHighResolutionCapable</key><true/>
+    <key>NSMicrophoneUsageDescription</key><string>TelefonX needs microphone access for SIP calls.</string>
+    <key>NSContactsUsageDescription</key><string>TelefonX can display Apple contacts with phone numbers as a read-only source next to your local address book.</string>
+    <key>NSAppleEventsUsageDescription</key><string>TelefonX can pause Apple Music and Spotify when a call starts.</string>
+    <key>NSLocalNetworkUsageDescription</key><string>TelefonX connects to SIP phone systems on your local network to make and receive calls.</string>
+    <key>NSFocusStatusUsageDescription</key><string>TelefonX can synchronize its Do Not Disturb mode with your Mac focus status.</string>
+    <key>NSUserActivityTypes</key><array><string>INStartCallIntent</string></array>
+    <key>CFBundleURLTypes</key><array><dict>
+        <key>CFBundleURLName</key><string>TelefonX Dial</string>
+        <key>CFBundleTypeRole</key><string>Viewer</string>
+        <key>CFBundleURLSchemes</key><array><string>telefonx</string><string>tel</string><string>sip</string><string>sips</string></array>
+    </dict></array>
+    <key>NSServices</key><array><dict>
+        <key>NSMenuItem</key><dict><key>default</key><string>Call with TelefonX</string></dict>
+        <key>NSMessage</key><string>dialSelection</string>
+        <key>NSPortName</key><string>TelefonX</string>
+        <key>NSSendTypes</key><array><string>public.utf8-plain-text</string></array>
+    </dict></array>
+</dict></plist>

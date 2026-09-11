@@ -1,0 +1,14 @@
+.DS_Store
+.codex/
+docs/
+.build/
+dist/
+Vendor/Sources/
+Vendor/Build/
+Vendor/Install/
+Vendor/Opus/
+*.xcuserstate
+xcuserdata/
+Tests/Integration/artifacts/
+__pycache__/
+*.pyc

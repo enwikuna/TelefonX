@@ -1,0 +1,10 @@
+diff --git a/pjlib/src/pj/ssl_sock_apple.m b/pjlib/src/pj/ssl_sock_apple.m
+--- a/pjlib/src/pj/ssl_sock_apple.m
++++ b/pjlib/src/pj/ssl_sock_apple.m
+@@ -1845,2 +1845,6 @@
+     vals = SecCertificateCopyValues(cert, key_arr, NULL);
++    if (!vals) {
++        CFRelease(key_arr);
++        return NULL;
++    }
+     dict = CFDictionaryGetValue(vals, key[0]);

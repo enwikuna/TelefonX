@@ -1,0 +1,6 @@
+"NSMicrophoneUsageDescription" = "TelefonX needs microphone access for SIP calls.";
+"NSContactsUsageDescription" = "TelefonX can display Apple contacts with phone numbers as a read-only source next to your local address book.";
+"NSAppleEventsUsageDescription" = "TelefonX can pause Apple Music and Spotify when a call starts.";
+"NSLocalNetworkUsageDescription" = "TelefonX connects to SIP phone systems on your local network to make and receive calls.";
+"NSFocusStatusUsageDescription" = "TelefonX can synchronize its Do Not Disturb mode with your Mac focus status.";
+"NSHumanReadableCopyright" = "Copyright © 2025–2026 Enwikuna. All rights reserved.";
