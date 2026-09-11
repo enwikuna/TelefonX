@@ -464,7 +464,6 @@
 "The line is no longer reachable. Check your VPN or network connection." = "Die Leitung ist nicht mehr erreichbar. Bitte VPN oder Netzwerkverbindung prüfen.";
 "The local contact %@ will be deleted. Recents and existing blocks are retained." = "Der lokale Kontakt %@ wird gelöscht. Anrufliste und bestehende Sperren bleiben erhalten.";
 "The local data store is unavailable. Quit the app and export diagnostics." = "Der lokale Datenspeicher ist nicht verfügbar. Bitte die App beenden und die Diagnose sichern.";
-"The login item is unavailable in this app bundle." = "Das Anmeldeobjekt ist in diesem App-Bundle nicht verfügbar.";
 "The longest matching prefix wins. Only registered lines are considered; otherwise, the dialer selection is used." = "Das längste passende Präfix gewinnt. Nur angemeldete Leitungen werden berücksichtigt. Sonst gilt die Auswahl im Wählfeld.";
 "The macOS Focus status is unavailable. In System Settings → Focus → Focus Status, check that Share Focus Status is enabled." = "Der macOS-Fokusstatus ist nicht verfügbar. Prüfe unter Systemeinstellungen → Fokus → Fokusstatus, ob „Fokusstatus teilen“ aktiviert ist.";
 "The party on hold hears this music in a loop until the call resumes. Use an unprotected WAV, AIFF, MP3, or M4A file up to 10 minutes or 100 MB. Your phone system may play its own hold music instead." = "Die gehaltene Gegenstelle hört diese Musik in einer Schleife. Beim Fortsetzen endet sie. WAV, AIFF, MP3 oder M4A ohne Kopierschutz, bis 10 Minuten / 100 MB. Je nach Telefonanlage kann stattdessen deren eigene Haltemusik erklingen.";
@@ -596,3 +595,9 @@
 "Empty Favorites Without a Line" = "Leere Favoriten ohne Leitung";
 "Empty Contacts With a Line" = "Leere Kontakte mit Leitung";
 "Empty Contacts Without a Line" = "Leere Kontakte ohne Leitung";
+"Locked · TelefonX Pro" = "Gesperrt · TelefonX Pro";
+"%@ · Locked · TelefonX Pro" = "%@ · Gesperrt · TelefonX Pro";
+"Unlock with TelefonX Pro …" = "Mit TelefonX Pro entsperren …";
+"Without Pro, only the first line is active. Drag a line to the first position to choose it. Locked lines and their settings remain saved." = "Ohne Pro ist nur die erste Leitung aktiv. Ziehe eine Leitung an die erste Position, um sie auszuwählen. Gesperrte Leitungen und ihre Einstellungen bleiben gespeichert.";
+"Drag the handle to change the order. Line editing is disabled during a call." = "Ziehe am Griff, um die Reihenfolge zu ändern. Während eines Gesprächs können Leitungen nicht bearbeitet werden.";
+"Line Status: %@, Locked · TelefonX Pro" = "Leitungsstatus: %@, gesperrt · TelefonX Pro";

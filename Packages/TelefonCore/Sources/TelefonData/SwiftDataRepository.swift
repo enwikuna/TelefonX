@@ -46,8 +46,8 @@ public enum PhoneMigrationPlan: SchemaMigrationPlan {
     public init(url: URL? = nil, inMemory: Bool = false) throws {
         let schema = Schema(versionedSchema: PhoneSchemaV1.self)
         let configuration: ModelConfiguration
-        if let url { configuration = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none) }
-        else { configuration = ModelConfiguration("TelefonX", schema: schema, isStoredInMemoryOnly: inMemory, cloudKitDatabase: .none) }
+        if let url { configuration = ModelConfiguration(schema: schema, url: url) }
+        else { configuration = ModelConfiguration("TelefonX", schema: schema, isStoredInMemoryOnly: inMemory) }
         container = try ModelContainer(for: schema, migrationPlan: PhoneMigrationPlan.self, configurations: configuration)
         context = ModelContext(container)
         context.autosaveEnabled = false

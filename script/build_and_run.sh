@@ -37,7 +37,6 @@ if [[ "$MODE" != --preview ]]; then
         security cms -D -i "$candidate" > "$decoded" 2>/dev/null || return 1
         [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$decoded" 2>/dev/null)" == "$TEAM_ID.$BUNDLE_ID" ]] || return 1
         [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.usernotifications.communication' "$decoded" 2>/dev/null)" == "true" ]] || return 1
-        /usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.icloud-container-identifiers' "$decoded" 2>/dev/null | grep -Fq "iCloud.$BUNDLE_ID" || return 1
         /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$decoded" 2>/dev/null | grep -Fq "$TARGET_DEVICE_ID" || return 1
         [[ "$(plutil -extract ExpirationDate raw "$decoded" 2>/dev/null)" > "$(date -u +%Y-%m-%dT%H:%M:%SZ)" ]] || return 1
     }
@@ -117,7 +116,6 @@ if [[ "$MODE" != --preview ]]; then
     cp "$ENTITLEMENTS" "$SIGNING_ENTITLEMENTS"
     /usr/libexec/PlistBuddy -c "Add :com.apple.application-identifier string $TEAM_ID.$BUNDLE_ID" "$SIGNING_ENTITLEMENTS"
     /usr/libexec/PlistBuddy -c "Add :com.apple.developer.team-identifier string $TEAM_ID" "$SIGNING_ENTITLEMENTS"
-    /usr/libexec/PlistBuddy -c 'Add :com.apple.developer.icloud-container-environment string Development' "$SIGNING_ENTITLEMENTS"
     ENTITLEMENTS="$SIGNING_ENTITLEMENTS"
 fi
 if [[ ! -f Vendor/Install/lib/libTelefonSIP.a ]]; then ./script/build_dependencies.sh; fi
@@ -209,7 +207,6 @@ if [[ "$MODE" != --preview ]]; then
     security cms -D -i "$APP_BUNDLE/Contents/embedded.provisionprofile" > "$EMBEDDED_PROFILE"
     [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.application-identifier' "$SIGNED_ENTITLEMENTS")" == "$TEAM_ID.$BUNDLE_ID" ]]
     [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.usernotifications.communication' "$SIGNED_ENTITLEMENTS")" == "true" ]]
-    /usr/libexec/PlistBuddy -c 'Print :com.apple.developer.icloud-container-identifiers' "$SIGNED_ENTITLEMENTS" | grep -Fq "iCloud.$BUNDLE_ID"
     [[ "$(plutil -extract UUID raw "$EMBEDDED_PROFILE")" == "$(plutil -extract UUID raw "$PROFILE_PLIST")" ]]
 fi
 if [[ "$MODE" != --preview && "$MODE" != --build ]]; then

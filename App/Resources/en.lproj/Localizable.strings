@@ -464,7 +464,6 @@
 "The line is no longer reachable. Check your VPN or network connection." = "The line is no longer reachable. Check your VPN or network connection.";
 "The local contact %@ will be deleted. Recents and existing blocks are retained." = "The local contact %@ will be deleted. Recents and existing blocks are retained.";
 "The local data store is unavailable. Quit the app and export diagnostics." = "The local data store is unavailable. Quit the app and export diagnostics.";
-"The login item is unavailable in this app bundle." = "The login item is unavailable in this app bundle.";
 "The longest matching prefix wins. Only registered lines are considered; otherwise, the dialer selection is used." = "The longest matching prefix wins. Only registered lines are considered; otherwise, the dialer selection is used.";
 "The macOS Focus status is unavailable. In System Settings → Focus → Focus Status, check that Share Focus Status is enabled." = "The macOS Focus status is unavailable. In System Settings → Focus → Focus Status, check that Share Focus Status is enabled.";
 "The party on hold hears this music in a loop until the call resumes. Use an unprotected WAV, AIFF, MP3, or M4A file up to 10 minutes or 100 MB. Your phone system may play its own hold music instead." = "The party on hold hears this music in a loop until the call resumes. Use an unprotected WAV, AIFF, MP3, or M4A file up to 10 minutes or 100 MB. Your phone system may play its own hold music instead.";
@@ -596,3 +595,9 @@
 "Empty Favorites Without a Line" = "Empty Favorites Without a Line";
 "Empty Contacts With a Line" = "Empty Contacts With a Line";
 "Empty Contacts Without a Line" = "Empty Contacts Without a Line";
+"Locked · TelefonX Pro" = "Locked · TelefonX Pro";
+"%@ · Locked · TelefonX Pro" = "%@ · Locked · TelefonX Pro";
+"Unlock with TelefonX Pro …" = "Unlock with TelefonX Pro …";
+"Without Pro, only the first line is active. Drag a line to the first position to choose it. Locked lines and their settings remain saved." = "Without Pro, only the first line is active. Drag a line to the first position to choose it. Locked lines and their settings remain saved.";
+"Drag the handle to change the order. Line editing is disabled during a call." = "Drag the handle to change the order. Line editing is disabled during a call.";
+"Line Status: %@, Locked · TelefonX Pro" = "Line Status: %@, Locked · TelefonX Pro";

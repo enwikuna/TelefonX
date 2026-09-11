@@ -89,8 +89,12 @@ struct DataSettings: View {
         Section("Connection Help") {
             ForEach(model.snapshot.accounts) { account in
                 LabeledContent(account.name) {
-                    Button("Technical Options …") { technicalAccount = account }
-                        .disabled(!model.activeCalls.isEmpty)
+                    if model.isAccountLockedByPro(account.id) {
+                        ProAccessButton("Unlock with TelefonX Pro …")
+                    } else {
+                        Button("Technical Options …") { technicalAccount = account }
+                            .disabled(!model.activeCalls.isEmpty)
+                    }
                 }
             }
             Button("Rebuild SIP Connections") {

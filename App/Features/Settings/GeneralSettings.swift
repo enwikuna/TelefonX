@@ -19,7 +19,7 @@ struct GeneralSettings: View {
                         set: { enabled in Task { await loginItem.setRegistered(enabled) } }
                     )
                 )
-                .disabled(loginItem.busy || loginItem.status == .unavailable)
+                .disabled(loginItem.busy)
 
                 switch loginItem.status {
                 case .requiresApproval:
@@ -30,10 +30,6 @@ struct GeneralSettings: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                case .unavailable:
-                    Text("The login item is unavailable in this app bundle.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 case .notRegistered, .enabled:
                     Text("Starts TelefonX automatically so your lines are reachable after login.")
                         .font(.caption)

@@ -5,6 +5,7 @@ extension PhoneModel {
     func saveAccount(_ account: PhoneAccount, password: String) async throws {
         let existing = snapshot.accounts.first { $0.id == account.id }
         if existing == nil && !snapshot.accounts.isEmpty { try requirePro(.additionalLines) }
+        if existing != nil && isAccountLockedByPro(account.id) { try requirePro(.additionalLines) }
         if case .file = account.ringtone, account.ringtone != existing?.ringtone {
             try requirePro(.customRingtones)
         }
@@ -51,6 +52,7 @@ extension PhoneModel {
         if selectedAccountID == id { selectedAccountID = next.defaultAccountID }
         if ready { try await engine.unregister(id) }
         try credentials.deletePassword(for: id); registrations.removeValue(forKey: id)
+        await reconcileLineAccess()
     }
     func moveAccount(_ sourceID: UUID, over targetID: UUID) {
         guard sourceID != targetID,
@@ -61,6 +63,7 @@ extension PhoneModel {
         next.accounts.insert(account, at: targetIndex)
         next.accounts = AccountOrdering.numbered(next.accounts)
         do { try commit(next) } catch { report(error) }
+        Task { await applyProAccessChange() }
     }
     func moveAccount(_ id: UUID, by offset: Int) {
         guard let index = snapshot.accounts.firstIndex(where: { $0.id == id }) else { return }
@@ -70,6 +73,7 @@ extension PhoneModel {
         next.accounts.swapAt(index, destination)
         next.accounts = AccountOrdering.numbered(next.accounts)
         do { try commit(next) } catch { report(error) }
+        Task { await applyProAccessChange() }
     }
     func saveContact(_ contact: PhoneContact) throws {
         var contact = contact

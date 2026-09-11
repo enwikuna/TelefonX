@@ -45,7 +45,9 @@ import TelefonData
             let oldReminderIDs = model.snapshot.reminders.map(\.id)
             do { try model.commit(next) }
             catch { model.configurationBusy = false; throw error }
-            model.selectedAccountID = next.defaultAccountID ?? next.accounts.first?.id
+            model.selectedAccountID = next.defaultAccountID.flatMap {
+                model.permittedAccountIDs.contains($0) ? $0 : nil
+            } ?? next.accounts.first?.id
             oldReminderIDs.forEach(CallReminderNotifications.remove)
             model.synchronizeReminderNotifications()
             Task {

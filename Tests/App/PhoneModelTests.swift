@@ -6,6 +6,157 @@ import TelefonData
 @testable import TelefonX
 
 @Suite @MainActor struct PhoneModelTests {
+    @Test func expiredProKeepsExtraLinesButLocksAndUnregistersThem() async throws {
+        let first = PhoneAccount(name: "First", username: "first", domain: "sip.example.com", sortIndex: 0)
+        let second = PhoneAccount(name: "Second", username: "second", domain: "sip.example.com", sortIndex: 1)
+        let third = PhoneAccount(name: "Third", username: "third", domain: "sip.example.com", sortIndex: 2)
+        let repository = MemoryRepository()
+        repository.value.accounts = [first, second, third]
+        repository.value.defaultAccountID = third.id
+        repository.value.contacts = [PhoneContact(name: "Ada", numbers: ["101"], preferredAccountID: second.id)]
+        repository.value.dialRules = [DialRule(prefix: "0173", accountID: third.id)]
+        let priorCall = CallSession(handle: .init(slot: 40, generation: 1), accountID: second.id,
+                                    remote: "101", incoming: false, phase: .ended)
+        repository.value.history = [CallRecord(session: priorCall, accountName: second.name)]
+        let storedSnapshot = repository.value
+        let engine = TestEngine(acceptRegistrations: true)
+        let model = PhoneModel(
+            engine: engine,
+            credentials: PasswordCredentials(),
+            repository: repository,
+            purchases: PurchaseStore(internalEvaluation: false, productIDs: [])
+        )
+        model.ready = true
+        model.registrations = [first.id: .registered, second.id: .registered, third.id: .registered]
+
+        await model.applyProAccessChange()
+
+        #expect(model.snapshot == storedSnapshot)
+        #expect(model.snapshot.history.first?.accountID == second.id)
+        #expect(model.snapshot.history.first?.accountName == second.name)
+        #expect(model.snapshot.contacts.first?.preferredAccountID == second.id)
+        #expect(model.snapshot.dialRules.first?.accountID == third.id)
+        #expect(model.snapshot.defaultAccountID == third.id)
+        #expect(repository.saveCount == 0)
+        #expect(model.selectedAccountID == first.id)
+        #expect(!model.isAccountLockedByPro(first.id))
+        #expect(model.isAccountLockedByPro(second.id))
+        #expect(model.isAccountLockedByPro(third.id))
+        #expect(model.registrations[first.id] == .registered)
+        #expect(model.registrations[second.id] == .disabled)
+        #expect(model.registrations[third.id] == .disabled)
+        #expect(Set(await engine.unregisteredAccounts) == [second.id, third.id])
+        await #expect(throws: ProAccessError.self) {
+            try await model.saveAccount(second, password: "secret")
+        }
+    }
+
+    @Test func aHistoricalCallOnALockedLineFallsBackToTheFreeLine() async throws {
+        let first = PhoneAccount(name: "First", username: "first", domain: "sip.example.com", sortIndex: 0)
+        let second = PhoneAccount(name: "Second", username: "second", domain: "sip.example.com", sortIndex: 1)
+        let repository = MemoryRepository()
+        repository.value.accounts = [first, second]
+        let engine = TestEngine(acceptCalls: true)
+        let model = PhoneModel(
+            engine: engine,
+            credentials: EmptyCredentials(),
+            repository: repository,
+            authorizeMicrophone: { true },
+            purchases: PurchaseStore(internalEvaluation: false, productIDs: [])
+        )
+        model.ready = true
+        model.selectedAccountID = first.id
+        model.registrations = [first.id: .registered, second.id: .disabled]
+
+        #expect(model.canCall("101", preferredAccountID: second.id))
+        #expect(await model.callNumber("101", preferredAccountID: second.id) != nil)
+        #expect(await engine.lastDestination == "101")
+        #expect(await engine.lastAccountID == first.id)
+    }
+
+    @Test func restoredProReactivatesStoredLinesAndTheirDefaultSelection() async {
+        let first = PhoneAccount(name: "First", username: "first", domain: "sip.example.com", sortIndex: 0)
+        let second = PhoneAccount(name: "Second", username: "second", domain: "sip.example.com", sortIndex: 1)
+        let repository = MemoryRepository()
+        repository.value.accounts = [first, second]
+        repository.value.defaultAccountID = second.id
+        repository.value.contacts = [PhoneContact(name: "Ada", numbers: ["101"], preferredAccountID: second.id)]
+        repository.value.dialRules = [DialRule(prefix: "0173", accountID: second.id)]
+        let storedSnapshot = repository.value
+        let engine = TestEngine(acceptRegistrations: true)
+        let model = PhoneModel(
+            engine: engine,
+            credentials: PasswordCredentials(),
+            repository: repository,
+            purchases: PurchaseStore(internalEvaluation: true, productIDs: [])
+        )
+        model.ready = true
+        model.registrations = [first.id: .disabled, second.id: .disabled]
+
+        await model.applyProAccessChange()
+
+        #expect(model.snapshot == storedSnapshot)
+        #expect(repository.saveCount == 0)
+        #expect(model.selectedAccountID == second.id)
+        #expect(Set(await engine.registeredAccounts) == [first.id, second.id])
+    }
+
+    @Test func expiredProLetsAnActiveExtraLineFinishBeforeUnregisteringIt() async {
+        let first = PhoneAccount(name: "First", username: "first", domain: "sip.example.com", sortIndex: 0)
+        let second = PhoneAccount(name: "Second", username: "second", domain: "sip.example.com", sortIndex: 1)
+        let repository = MemoryRepository()
+        repository.value.accounts = [first, second]
+        let engine = TestEngine(acceptRegistrations: true)
+        let model = PhoneModel(
+            engine: engine,
+            credentials: PasswordCredentials(),
+            repository: repository,
+            purchases: PurchaseStore(internalEvaluation: false, productIDs: [])
+        )
+        let handle = CallHandle(slot: 41, generation: 1)
+        model.ready = true
+        model.registrations = [first.id: .registered, second.id: .registered]
+        model.calls = [CallSession(handle: handle, accountID: second.id, remote: "101",
+                                   incoming: false, phase: .connected)]
+
+        await model.applyProAccessChange()
+        #expect(await engine.unregisteredAccounts.isEmpty)
+        #expect(model.calls.count == 1)
+
+        model.receive(.call(handle, accountID: second.id, remote: "101",
+                            incoming: false, phase: .ended, status: 200))
+        let didUnregister = await waitUntil {
+            await engine.unregisteredAccounts.contains(second.id)
+        }
+        #expect(didUnregister)
+        #expect(model.snapshot.accounts == [first, second])
+        #expect(model.registrations[second.id] == .disabled)
+    }
+
+    @Test func expiredProRejectsANewIncomingCallOnALockedLine() async {
+        let first = PhoneAccount(name: "First", username: "first", domain: "sip.example.com", sortIndex: 0)
+        let second = PhoneAccount(name: "Second", username: "second", domain: "sip.example.com", sortIndex: 1)
+        let repository = MemoryRepository()
+        repository.value.accounts = [first, second]
+        let engine = TestEngine(acceptDeclines: true)
+        let model = PhoneModel(
+            engine: engine,
+            credentials: EmptyCredentials(),
+            repository: repository,
+            purchases: PurchaseStore(internalEvaluation: false, productIDs: [])
+        )
+        let handle = CallHandle(slot: 42, generation: 1)
+
+        model.receive(.call(handle, accountID: second.id, remote: "101",
+                            incoming: true, phase: .incoming, status: 180))
+        let didDecline = await waitUntil {
+            await engine.declinedCalls.contains(handle)
+        }
+
+        #expect(didDecline)
+        #expect(model.calls.first(where: { $0.handle == handle })?.locallyDeclined == true)
+    }
+
     @Test func freeRemindersRemainExportableButCannotBeUsedOrChanged() async throws {
         let repository = MemoryRepository()
         let reminder = CallReminder(name: "Ada", number: "101", note: "Angebot", dueAt: Date().addingTimeInterval(3600))

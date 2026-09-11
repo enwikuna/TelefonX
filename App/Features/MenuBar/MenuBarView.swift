@@ -13,7 +13,7 @@ struct MenuBarView: View {
                 statusRow(LineStatusPresentation(
                     account: account,
                     state: model.registrations[account.id] ?? (account.enabled ? .offline : .disabled)
-                ))
+                ), locked: model.isAccountLockedByPro(account.id))
             }
         }
         Divider()
@@ -49,14 +49,20 @@ struct MenuBarView: View {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    private func statusRow(_ status: LineStatusPresentation) -> some View {
+    private func statusRow(_ status: LineStatusPresentation, locked: Bool = false) -> some View {
         Label {
             Text(status.title)
         } icon: {
-            Image(nsImage: MenuStatusDot.image(for: status.level))
-                .renderingMode(.original)
+            if locked {
+                Image(systemName: "lock.fill")
+            } else {
+                Image(nsImage: MenuStatusDot.image(for: status.level))
+                    .renderingMode(.original)
+            }
         }
-        .accessibilityLabel(L10n.format("Line Status: %@", status.accessibilityTitle))
+        .accessibilityLabel(locked
+            ? L10n.format("Line Status: %@, Locked · TelefonX Pro", status.accessibilityTitle)
+            : L10n.format("Line Status: %@", status.accessibilityTitle))
     }
 }
 

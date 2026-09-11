@@ -5,7 +5,6 @@ enum LoginItemStatus: Equatable {
     case notRegistered
     case enabled
     case requiresApproval
-    case unavailable
 }
 
 @MainActor protocol LoginItemServicing {
@@ -21,8 +20,11 @@ enum LoginItemStatus: Equatable {
         case .notRegistered: .notRegistered
         case .enabled: .enabled
         case .requiresApproval: .requiresApproval
-        case .notFound: .unavailable
-        @unknown default: .unavailable
+        // A freshly built or moved main-app bundle can initially be reported as
+        // not found. Registration is what lets ServiceManagement discover it,
+        // so this must remain an actionable, unchecked state.
+        case .notFound: .notRegistered
+        @unknown default: .notRegistered
         }
     }
 

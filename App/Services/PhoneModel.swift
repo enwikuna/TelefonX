@@ -201,7 +201,9 @@ private func registrationStates(
         do {
             if let repository {
                 self.repository = repository; snapshot = try repository.load()
-                selectedAccountID = snapshot.defaultAccountID ?? snapshot.accounts.first?.id
+                selectedAccountID = snapshot.defaultAccountID.flatMap {
+                    permittedAccountIDs.contains($0) ? $0 : nil
+                } ?? snapshot.accounts.first?.id
                 return
             }
             let base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
@@ -210,7 +212,9 @@ private func registrationStates(
                                                     attributes: [.posixPermissions: 0o700])
             let repository = try SwiftDataRepository(url: base.appending(path: "TelefonX.store"))
             self.repository = repository; snapshot = try repository.load()
-            selectedAccountID = snapshot.defaultAccountID ?? snapshot.accounts.first?.id
+            selectedAccountID = snapshot.defaultAccountID.flatMap {
+                permittedAccountIDs.contains($0) ? $0 : nil
+            } ?? snapshot.accounts.first?.id
         } catch { storageError = L10n.error(error) }
     }
     var activeCalls: [CallSession] { calls.filter { $0.phase != .ended } }
@@ -222,7 +226,9 @@ private func registrationStates(
     var presentedCalls: [CallSession] {
         activeCalls.filter { !$0.locallyDeclined && !$0.blocked }
     }
-    var registeredCount: Int { registrations.values.filter { $0 == .registered }.count }
+    var registeredCount: Int {
+        registrations.count { permittedAccountIDs.contains($0.key) && $0.value == .registered }
+    }
     var selectedAccount: PhoneAccount? { snapshot.accounts.first { $0.id == selectedAccountID } }
     var visibleAppleContacts: [AppleContact] { Self.removingAppleDuplicates(appleContacts, local: snapshot.contacts) }
     var outgoingCallsBlockedByConfiguration: Bool {
@@ -309,6 +315,11 @@ private func registrationStates(
     }
     func register(_ account: PhoneAccount, showsProgress: Bool = true) async {
         guard ready else { return }
+        guard !isAccountLockedByPro(account.id) else {
+            cancelPendingRegistrationState(for: account.id)
+            registrations[account.id] = .disabled
+            return
+        }
         guard account.enabled else { registrations[account.id] = .disabled; return }
         if showsProgress { showRegistrationProgress(for: account.id) }
         do {
@@ -330,7 +341,9 @@ private func registrationStates(
     /// periods because replacing an account would also affect its calls.
     func reconnect(accountID: UUID? = nil) async {
         guard ready else { await start(); return }
-        let accounts = snapshot.accounts.filter { $0.enabled && (accountID == nil || $0.id == accountID) }
+        let accounts = snapshot.accounts.filter {
+            $0.enabled && !isAccountLockedByPro($0.id) && (accountID == nil || $0.id == accountID)
+        }
         await rebuildRegistrations(accounts, reportFailure: true)
     }
 
@@ -375,7 +388,8 @@ private func registrationStates(
             guard ready else { return }
             let newlyUnavailable = await verifyRegisteredAccounts(publishesFailures: false)
             let unavailable = snapshot.accounts.filter {
-                $0.enabled && (registrations[$0.id] != .registered || newlyUnavailable.contains($0.id))
+                $0.enabled && !isAccountLockedByPro($0.id)
+                    && (registrations[$0.id] != .registered || newlyUnavailable.contains($0.id))
             }
             await rebuildRegistrations(unavailable, reportFailure: false)
         } catch {
@@ -387,7 +401,7 @@ private func registrationStates(
         guard ready, activeCalls.isEmpty, !callOperationPending, !configurationBusy,
               !registrationHealthCheckActive else { return [] }
         let accounts = snapshot.accounts.filter {
-            $0.enabled && registrations[$0.id] == .registered
+            $0.enabled && !isAccountLockedByPro($0.id) && registrations[$0.id] == .registered
         }
         guard !accounts.isEmpty else { return [] }
         registrationHealthCheckActive = true
@@ -414,7 +428,7 @@ private func registrationStates(
     private func recoverUnavailableRegistrations() async {
         guard ready, activeCalls.isEmpty, !callOperationPending, !configurationBusy else { return }
         let unavailable = snapshot.accounts.filter { account in
-            guard account.enabled else { return false }
+            guard account.enabled, !isAccountLockedByPro(account.id) else { return false }
             return switch registrations[account.id] ?? .offline {
             case .failed, .offline: true
             case .disabled, .registering, .registered: false
@@ -670,7 +684,8 @@ private func registrationStates(
         case let .registration(id, state): applyRegistrationState(state, to: id)
         case let .call(handle, accountID, remote, incoming, phase, status):
             guard !finished.contains(handle) else { return }
-            if !calls.contains(where: { $0.handle == handle }) {
+            let isNewCall = !calls.contains(where: { $0.handle == handle })
+            if isNewCall {
                 calls.append(CallSession(handle: handle, accountID: accountID, remote: remote, incoming: incoming, phase: phase))
                 Task { await resolvePublicCallerName(remote) }
             }
@@ -681,9 +696,11 @@ private func registrationStates(
                 calls[index].held = media.0; calls[index].remoteHeld = media.1; calls[index].mediaError = media.2
             }
             let blockedByRule = Routing.isBlocked(remote, rules: snapshot.blocks, anonymous: snapshot.blockAnonymous)
+            let rejectedByLineAccess = incoming && isNewCall && isAccountLockedByPro(accountID)
             let rejectedByCallWaiting = incoming && phase != .ended && !callWaitingEnabled
                 && hasEstablishedCall(excluding: handle)
-            if incoming && phase != .ended && (blockedByRule || doNotDisturb || rejectedByCallWaiting) {
+            if incoming && phase != .ended
+                && (blockedByRule || doNotDisturb || rejectedByCallWaiting || rejectedByLineAccess) {
                 if blockedByRule { calls[index].blocked = true }
                 else { calls[index].locallyDeclined = true }
                 removeIncomingNotification(handle)
@@ -722,6 +739,9 @@ private func registrationStates(
                     Task { await engine.releaseAudio() }
                     if networkRefreshPending { scheduleNetworkRefresh() }
                 }
+                if isAccountLockedByPro(accountID) {
+                    Task { await reconcileLineAccess() }
+                }
             }
             updateRinging()
         case let .media(handle, held, remoteHeld, error):
@@ -740,6 +760,11 @@ private func registrationStates(
     }
 
     private func applyRegistrationState(_ state: RegistrationState, to id: UUID) {
+        if isAccountLockedByPro(id), !activeCalls.contains(where: { $0.accountID == id }) {
+            cancelPendingRegistrationState(for: id)
+            registrations[id] = .disabled
+            return
+        }
         if state != .registered, silentlyVerifiedAccounts.contains(id) { return }
         if state == .registered || state == .disabled {
             cancelPendingRegistrationState(for: id)
@@ -800,7 +825,7 @@ private func registrationStates(
         }
     }
 
-    private func cancelPendingRegistrationState(for id: UUID) {
+    func cancelPendingRegistrationState(for id: UUID) {
         pendingRegistrationTasks.removeValue(forKey: id)?.cancel()
         pendingRegistrationStates.removeValue(forKey: id)
     }
@@ -862,7 +887,7 @@ private func registrationStates(
         preparedReminderID = nil
         do {
             dialText = try CallDestination(value).value
-            if let accountID { selectedAccountID = accountID }
+            if let accountID, !isAccountLockedByPro(accountID) { selectedAccountID = accountID }
             return true
         } catch {
             report(error)

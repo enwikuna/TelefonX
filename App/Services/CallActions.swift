@@ -104,9 +104,11 @@ extension PhoneModel {
     func canCall(_ value: String, preferredAccountID: UUID?) -> Bool {
         guard ready, conferenceHandles.isEmpty, !callOperationPending, !outgoingCallsBlockedByConfiguration,
               let destination = try? CallDestination(value) else { return false }
-        let available = Set(snapshot.accounts.filter { registrations[$0.id] == .registered }.map(\.id))
+        let available = Set(snapshot.accounts.filter {
+            !isAccountLockedByPro($0.id) && registrations[$0.id] == .registered
+        }.map(\.id))
         return Routing.account(for: destination.value, rules: availableDialRules, available: available,
-                               fallback: preferredAccountID ?? selectedAccountID) != nil
+                               fallback: availableFallbackAccountID(preferredAccountID, available: available)) != nil
     }
 
     /// Explicit call actions never consume or overwrite the user's unrelated dialer draft.
@@ -132,9 +134,13 @@ extension PhoneModel {
         do {
             guard conferenceHandles.isEmpty else { throw AppError.conferenceInProgress }
             let destination = try CallDestination(value)
-            let available = Set(snapshot.accounts.filter { registrations[$0.id] == .registered }.map(\.id))
+            let available = Set(snapshot.accounts.filter {
+                !isAccountLockedByPro($0.id) && registrations[$0.id] == .registered
+            }.map(\.id))
             let routedID = Routing.account(for: destination.value, rules: availableDialRules,
-                                            available: available, fallback: preferredAccountID)
+                                            available: available,
+                                            fallback: availableFallbackAccountID(preferredAccountID,
+                                                                                 available: available))
             guard let account = snapshot.accounts.first(where: { $0.id == routedID }) else { throw AppError.noLine }
             do {
                 beginSilentRegistrationVerification(for: account.id)
@@ -173,6 +179,15 @@ extension PhoneModel {
 
     private var availableDialRules: [DialRule] {
         purchases.access.permits(.dialingRules) ? snapshot.dialRules : []
+    }
+
+    /// Historical calls, contacts and reminders deliberately retain their line
+    /// association. If that line is no longer callable (for example after Pro
+    /// expires), use the currently selected free line instead of failing.
+    private func availableFallbackAccountID(_ preferredAccountID: UUID?, available: Set<UUID>) -> UUID? {
+        if let preferredAccountID, available.contains(preferredAccountID) { return preferredAccountID }
+        if let selectedAccountID, available.contains(selectedAccountID) { return selectedAccountID }
+        return snapshot.accounts.first(where: { available.contains($0.id) })?.id
     }
     func answer(_ call: CallSession) async {
         guard !callOperationPending else { return }

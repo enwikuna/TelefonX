@@ -14,9 +14,17 @@ struct AccountsSettings: View {
         Form {
             Section {
                 ForEach(model.snapshot.accounts) { account in
+                    let locked = model.isAccountLockedByPro(account.id)
                     let state = model.registrations[account.id] ?? .offline
                     HStack {
-                        RegistrationIndicator(state: state)
+                        if locked {
+                            Image(systemName: "lock.fill")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 7)
+                                .help("Locked · TelefonX Pro")
+                        } else {
+                            RegistrationIndicator(state: state)
+                        }
                         VStack(alignment: .leading) {
                             Text(account.name)
                             Text("\(account.username)@\(account.domain)")
@@ -24,11 +32,15 @@ struct AccountsSettings: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        if showsReconnect(account, state: state) {
+                        if !locked, showsReconnect(account, state: state) {
                             Button("Reconnect") { Task { await model.reconnect(accountID: account.id) } }
                         }
-                        Button("Edit …") { editing = account }
-                            .disabled(!model.activeCalls.isEmpty)
+                        if locked {
+                            ProAccessButton("Unlock with TelefonX Pro …")
+                        } else {
+                            Button("Edit …") { editing = account }
+                                .disabled(!model.activeCalls.isEmpty)
+                        }
                         Button(role: .destructive) { deleting = account } label: {
                             Image(systemName: "trash")
                         }
@@ -94,7 +106,13 @@ struct AccountsSettings: View {
             } header: {
                 Text("Your SIP Lines")
             } footer: {
-                Text("Drag the handle to change the order. All lines remain registered at the same time. Line editing is disabled during a call.")
+                if model.purchases.access.permits(.additionalLines) {
+                    Text("Drag the handle to change the order. All lines remain registered at the same time. Line editing is disabled during a call.")
+                } else if model.snapshot.accounts.count > 1 {
+                    Text("Without Pro, only the first line is active. Drag a line to the first position to choose it. Locked lines and their settings remain saved.")
+                } else {
+                    Text("Drag the handle to change the order. Line editing is disabled during a call.")
+                }
             }
 
             Section {
@@ -110,8 +128,10 @@ struct AccountsSettings: View {
                     )
                 ) {
                     Text("None").tag(UUID?.none)
-                    ForEach(model.snapshot.accounts) {
-                        Text($0.name).tag(Optional($0.id))
+                    ForEach(model.snapshot.accounts) { account in
+                        Label(account.name, systemImage: model.isAccountLockedByPro(account.id) ? "lock.fill" : "network")
+                            .tag(Optional(account.id))
+                            .disabled(model.isAccountLockedByPro(account.id))
                     }
                 }
                 NotificationSettingsRow()
