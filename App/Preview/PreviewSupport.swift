@@ -53,7 +53,7 @@ enum PreviewSupport {
                                removeReminderNotification: CallReminderNotifications.remove,
                                requestIncomingAttention: IncomingCallAttention.request,
                                cancelIncomingAttention: IncomingCallAttention.cancel,
-                               initialPauseMediaDuringCalls: defaults.object(forKey: pauseMediaKey) as? Bool ?? true,
+                               initialPauseMediaDuringCalls: defaults.object(forKey: pauseMediaKey) as? Bool ?? false,
                                initialCallWaitingEnabled: defaults.object(forKey: callWaitingKey) as? Bool ?? true,
                                persistPauseMediaDuringCalls: { defaults.set($0, forKey: pauseMediaKey) },
                                persistCallWaitingEnabled: { defaults.set($0, forKey: callWaitingKey) },
@@ -61,7 +61,7 @@ enum PreviewSupport {
                                persistAutomaticallyStartListCalls: {
                                    defaults.set($0, forKey: automaticallyStartListCallsKey)
                                },
-                               initialPublicCallerLookupEnabled: defaults.object(forKey: publicCallerLookupKey) as? Bool ?? true,
+                               initialPublicCallerLookupEnabled: defaults.object(forKey: publicCallerLookupKey) as? Bool ?? false,
                                persistPublicCallerLookupEnabled: { defaults.set($0, forKey: publicCallerLookupKey) },
                                initialReminderNotificationTiming: CallReminderNotificationTiming(
                                 rawValue: defaults.string(forKey: reminderNotificationTimingKey) ?? ""

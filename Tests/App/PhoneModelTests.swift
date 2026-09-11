@@ -782,6 +782,7 @@ import TelefonData
             credentials: EmptyCredentials(),
             repository: MemoryRepository(),
             authorizeMicrophone: { true },
+            initialPauseMediaDuringCalls: true,
             pauseMediaPlayback: { pauseCount += 1 }
         )
         let account = PhoneAccount()
@@ -803,6 +804,24 @@ import TelefonData
         model.dialText = "102"
         #expect(await model.dial() != nil)
         #expect(pauseCount == 1)
+    }
+
+    @Test func privacySensitiveIntegrationsRequireOptInByDefault() async {
+        let lookup = TestPublicCallerLookup(identity: PublicCallerIdentity(
+            name: "Example Company", matchedNumber: "+4980212083234", exact: true
+        ))
+        let model = PhoneModel(
+            engine: TestEngine(),
+            credentials: EmptyCredentials(),
+            repository: MemoryRepository(),
+            publicCallerLookup: lookup
+        )
+
+        #expect(!model.pauseMediaDuringCalls)
+        #expect(!model.publicCallerLookupEnabled)
+        #expect(!model.canUsePublicCallerLookup)
+        await model.resolvePublicCallerName("+4980212083234")
+        #expect(await lookup.requests.isEmpty)
     }
 
     @Test func deniedMicrophoneNeverStartsCallAndPreservesDestination() async {
@@ -1446,7 +1465,7 @@ import TelefonData
             name: "Hetzner Online GmbH", matchedNumber: "+493745744470", exact: false
         ))
         let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: MemoryRepository(),
-                               publicCallerLookup: lookup)
+                               publicCallerLookup: lookup, initialPublicCallerLookupEnabled: true)
 
         #expect(model.displayName("+49-3745-74447-100") == "+49-3745-74447-100")
         await model.resolvePublicCallerName("+49-3745-74447-100")
@@ -1464,6 +1483,7 @@ import TelefonData
         var persisted: Bool?
         let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: MemoryRepository(),
                                publicCallerLookup: lookup,
+                               initialPublicCallerLookupEnabled: true,
                                persistPublicCallerLookupEnabled: { persisted = $0 })
         await model.resolvePublicCallerName("+49374574447100")
         #expect(model.displayName("+49374574447100") == "Hetzner Online GmbH")
@@ -1479,7 +1499,7 @@ import TelefonData
     @Test func disabledInFlightPublicLookupDoesNotPreventRetryAfterEnabling() async {
         let lookup = DeferredPublicCallerLookup()
         let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: MemoryRepository(),
-                               publicCallerLookup: lookup)
+                               publicCallerLookup: lookup, initialPublicCallerLookupEnabled: true)
         let first = Task { await model.resolvePublicCallerName("+49374574447100") }
         while await lookup.requests == 0 { await Task.yield() }
         model.setPublicCallerLookupEnabled(false)
@@ -1494,7 +1514,7 @@ import TelefonData
     @Test func cancelledPublicCallerLookupIsNotCachedAsAMiss() async {
         let lookup = TestPublicCallerLookup(identity: nil, suspendFirstRequest: true)
         let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: MemoryRepository(),
-                               publicCallerLookup: lookup)
+                               publicCallerLookup: lookup, initialPublicCallerLookupEnabled: true)
         let first = Task { await model.resolvePublicCallerName("+49374574447100") }
         while await lookup.requests.isEmpty { await Task.yield() }
 
