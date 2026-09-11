@@ -119,6 +119,8 @@ if [[ "$MODE" != --preview ]]; then
     ENTITLEMENTS="$SIGNING_ENTITLEMENTS"
 fi
 if [[ ! -f Vendor/Install/lib/libTelefonSIP.a ]]; then ./script/build_dependencies.sh; fi
+PRIVACY_MANIFEST="App/Resources/PrivacyInfo.xcprivacy"
+plutil -lint "$PRIVACY_MANIFEST" >/dev/null
 # Graceful quit preserves history and lets the app ask about active calls.
 if pgrep -x "$APP_NAME" >/dev/null; then
     if ! osascript \
@@ -165,6 +167,12 @@ if [[ "$MODE" == --preview ]]; then
     plutil -remove NSServices "$APP_BUNDLE/Contents/Info.plist"
 fi
 ditto App/Resources "$APP_BUNDLE/Contents/Resources"
+EMBEDDED_PRIVACY_MANIFEST="$APP_BUNDLE/Contents/Resources/PrivacyInfo.xcprivacy"
+if [[ ! -f "$EMBEDDED_PRIVACY_MANIFEST" ]]; then
+    echo "PrivacyInfo.xcprivacy was not embedded in the app bundle." >&2
+    exit 1
+fi
+plutil -lint "$EMBEDDED_PRIVACY_MANIFEST" >/dev/null
 ASSET_OUTPUT="$BUILD_TEMP/AssetCatalog"
 mkdir -p "$ASSET_OUTPUT"
 ASSET_INFO="$ASSET_OUTPUT/asset-info.plist"
