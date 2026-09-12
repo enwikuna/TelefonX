@@ -1152,6 +1152,32 @@ import TelefonData
         #expect(await engine.lastAccountID == selected.id)
     }
 
+    @Test func unlockedDialingRuleRoutesNewCallThroughLongestMatchingRegisteredLine() async throws {
+        let engine = TestEngine(acceptCalls: true)
+        let model = PhoneModel(
+            engine: engine,
+            credentials: EmptyCredentials(),
+            repository: MemoryRepository(),
+            authorizeMicrophone: { true },
+            purchases: testProPurchases()
+        )
+        let selected = PhoneAccount(name: "Selected")
+        let national = PhoneAccount(name: "National")
+        let mobile = PhoneAccount(name: "Mobile")
+        model.snapshot.accounts = [selected, national, mobile]
+        model.snapshot.dialRules = [
+            DialRule(prefix: "0", accountID: national.id),
+            DialRule(prefix: "0173", accountID: mobile.id)
+        ]
+        model.selectedAccountID = selected.id
+        model.ready = true
+        model.registrations = [selected.id: .registered, national.id: .registered, mobile.id: .registered]
+
+        #expect(await model.callNumber("01731234567", preferredAccountID: selected.id) != nil)
+        #expect(await engine.lastDestination == "01731234567")
+        #expect(await engine.lastAccountID == mobile.id)
+    }
+
     @Test func temporaryCallerIDSuppressionIsConsumedOnlyByAStartedCall() async {
         let engine = TestEngine(acceptCalls: true)
         let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: MemoryRepository(), authorizeMicrophone: { true })

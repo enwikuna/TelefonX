@@ -4,6 +4,7 @@ import SwiftUI
 struct MenuBarView: View {
     @Environment(PhoneModel.self) private var model
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         if model.snapshot.accounts.isEmpty {
@@ -39,13 +40,18 @@ struct MenuBarView: View {
         if !model.presentedCalls.isEmpty {
             Divider()
         }
-        SettingsLink { Text("Settings …") }
+        Button("Settings …", action: openSettingsWindow)
         Button("Quit TelefonX") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
 
     private func openMainWindow() {
         openWindow(id: "main")
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func openSettingsWindow() {
+        openSettings()
         NSApp.activate(ignoringOtherApps: true)
     }
 

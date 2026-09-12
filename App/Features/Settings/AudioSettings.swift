@@ -28,7 +28,7 @@ struct AudioSettings: View {
             if let warning = model.audioWarning { Text(warning).foregroundStyle(.orange) }
         }.formStyle(.grouped).task { await model.refreshDevices() }.onDisappear { preview.stop() }
     }
-    private func devicePicker(_ title: String, selection: Binding<String>, input: Bool) -> some View {
+    private func devicePicker(_ title: LocalizedStringKey, selection: Binding<String>, input: Bool) -> some View {
         Picker(title, selection: selection) {
             Text("System Default").tag("")
             ForEach(model.devices.filter { input ? $0.inputChannels > 0 : $0.outputChannels > 0 }) { Text($0.name).tag($0.id) }
