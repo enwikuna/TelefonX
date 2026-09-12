@@ -51,6 +51,7 @@ if [[ "$MODE" != --preview ]]; then
         [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.usernotifications.communication' "$decoded" 2>/dev/null)" == "true" ]] || return 1
         [[ "$(plutil -extract ExpirationDate raw "$decoded" 2>/dev/null)" > "$(date -u +%Y-%m-%dT%H:%M:%SZ)" ]] || return 1
         if [[ "$IS_APP_STORE" == true ]]; then
+            /usr/libexec/PlistBuddy -c 'Print :Platform' "$decoded" 2>/dev/null | grep -Fq 'OSX' || return 1
             ! /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$decoded" >/dev/null 2>&1 || return 1
             [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:get-task-allow' "$decoded" 2>/dev/null)" != "true" ]] || return 1
         else
