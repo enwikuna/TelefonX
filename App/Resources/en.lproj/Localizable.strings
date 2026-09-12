@@ -405,7 +405,7 @@
 "SRTP Active" = "SRTP Active";
 "SIP Line" = "SIP Line";
 "SIP Username" = "SIP Username";
-"STUN servers cannot be configured in this test build yet. Check the network requirements of your SIP provider or phone system." = "STUN servers cannot be configured in this test build yet. Check the network requirements of your SIP provider or phone system.";
+"TelefonX does not currently support custom STUN servers. Check the network requirements of your SIP provider or phone system." = "TelefonX does not currently support custom STUN servers. Check the network requirements of your SIP provider or phone system.";
 "Save" = "Save";
 "Save Password" = "Save Password";
 "Saving" = "Saving";
@@ -452,7 +452,7 @@
 "The App Store purchase could not be verified. No features were unlocked." = "The App Store purchase could not be verified. No features were unlocked.";
 "The audio file is empty or longer than ten minutes." = "The audio file is empty or longer than ten minutes.";
 "The audio file is missing on this Mac. Choose it again." = "The audio file is missing on this Mac. Choose it again.";
-"The best shared codec is normally selected automatically. SRTP requires TLS. STUN and TURN servers cannot be configured in this test build." = "The best shared codec is normally selected automatically. SRTP requires TLS. STUN and TURN servers cannot be configured in this test build.";
+"The best shared codec is normally selected automatically. SRTP requires TLS. TelefonX does not currently support custom STUN or TURN servers." = "The best shared codec is normally selected automatically. SRTP requires TLS. TelefonX does not currently support custom STUN or TURN servers.";
 "The callback reminder will be permanently removed. Contacts and recents are retained." = "The callback reminder will be permanently removed. Contacts and recents are retained.";
 "The credentials are removed. Call history is retained." = "The credentials are removed. Call history is retained.";
 "The current call is placed on hold when you call." = "The current call is placed on hold when you call.";

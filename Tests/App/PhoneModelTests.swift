@@ -232,7 +232,8 @@ import TelefonData
         repository.value.reminders = [first, completed, other]
         let cancelled = Mutex<Set<UUID>>([])
         let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: repository,
-                               removeReminderNotification: { id in cancelled.withLock { _ = $0.insert(id) } })
+                               removeReminderNotification: { id in cancelled.withLock { _ = $0.insert(id) } },
+                               purchases: testProPurchases())
         let ids: Set<UUID> = [first.id, completed.id, UUID()]
         repository.failSave = true
         #expect(throws: TestFailure.self) {
@@ -283,7 +284,7 @@ import TelefonData
         model.receive(.call(handle, accountID: UUID(), remote: "102", incoming: true, phase: .ended, status: 487))
         let missedCall = try #require(model.snapshot.history.first)
 
-        try model.deleteHistoryRecord(missedCall.id)
+        try model.deleteHistoryRecords([missedCall.id])
 
         #expect(model.missedCallBadgeCount == 0)
         #expect(model.unseenMissedCallIDs.isEmpty)
@@ -444,7 +445,8 @@ import TelefonData
         let first = PhoneAccount(name: "VPN", username: "vpn", domain: "sip.vpn.example")
         let second = PhoneAccount(name: "Office", username: "office", domain: "sip.office.example")
         repository.value.accounts = [first, second]
-        let model = PhoneModel(engine: engine, credentials: PasswordCredentials(), repository: repository)
+        let model = PhoneModel(engine: engine, credentials: PasswordCredentials(), repository: repository,
+                               purchases: testProPurchases())
         model.ready = true
         model.registrations[first.id] = .failed(503)
         model.registrations[second.id] = .registered
@@ -464,7 +466,8 @@ import TelefonData
         let vpn = PhoneAccount(name: "VPN", username: "vpn", domain: "sip.vpn.example")
         let healthy = PhoneAccount(name: "Office", username: "office", domain: "sip.office.example")
         repository.value.accounts = [vpn, healthy]
-        let model = PhoneModel(engine: engine, credentials: PasswordCredentials(), repository: repository)
+        let model = PhoneModel(engine: engine, credentials: PasswordCredentials(), repository: repository,
+                               purchases: testProPurchases())
         model.ready = true
         model.registrations[vpn.id] = .failed(503)
         model.registrations[healthy.id] = .registered
@@ -483,7 +486,8 @@ import TelefonData
         let repository = MemoryRepository()
         let account = PhoneAccount(name: "VPN", username: "vpn", domain: "sip.vpn.example")
         repository.value.accounts = [account]
-        let model = PhoneModel(engine: engine, credentials: PasswordCredentials(), repository: repository)
+        let model = PhoneModel(engine: engine, credentials: PasswordCredentials(), repository: repository,
+                               purchases: testProPurchases())
         model.ready = true
         model.registrations[account.id] = .registered
 
@@ -500,7 +504,8 @@ import TelefonData
             PhoneAccount(name: "Line \($0)", username: "line\($0)", domain: "sip.example.com")
         }
         repository.value.accounts = accounts
-        let model = PhoneModel(engine: engine, credentials: PasswordCredentials(), repository: repository)
+        let model = PhoneModel(engine: engine, credentials: PasswordCredentials(), repository: repository,
+                               purchases: testProPurchases())
         model.ready = true
         model.registrations = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, .registered) })
 
@@ -824,6 +829,13 @@ import TelefonData
         #expect(await lookup.requests.isEmpty)
     }
 
+    @Test func defaultModelFailsClosedForPaidFeatures() {
+        let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: MemoryRepository())
+        #expect(!model.purchases.hasProAccess)
+        #expect(!model.purchases.access.permits(.additionalLines))
+        #expect(!model.purchases.access.permits(.callReminders))
+    }
+
     @Test func deniedMicrophoneNeverStartsCallAndPreservesDestination() async {
         let engine = TestEngine()
         let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: MemoryRepository(),
@@ -887,7 +899,8 @@ import TelefonData
         let music = AudioAsset(name: "Testton")
         try #require(DialTone.waveData(for: "1")).write(to: store.url(for: music))
         let engine = TestEngine(), repository = MemoryRepository()
-        let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: repository, audioFiles: store)
+        let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: repository,
+                               audioFiles: store, purchases: testProPurchases())
         model.ready = true
         try await model.saveHoldMusic(music)
         #expect(repository.value.holdMusic == music)
@@ -1061,15 +1074,15 @@ import TelefonData
         model.snapshot.blocks = [BlockRule(number: "102")]; model.calls = [call]
         var expected = model.snapshot; expected.history = [second]
         repository.failSave = true
-        #expect(throws: TestFailure.self) { try model.deleteHistoryRecord(first.id) }
+        #expect(throws: TestFailure.self) { try model.deleteHistoryRecords([first.id]) }
         #expect(model.snapshot.history == [first, second])
         repository.failSave = false
-        try model.deleteHistoryRecord(first.id)
+        try model.deleteHistoryRecords([first.id])
         #expect(model.snapshot == expected)
         #expect(model.calls.map(\.id) == [call.id])
         #expect(model.calls.first?.phase == .connected)
         #expect(model.calls.first?.remote == "101")
-        try model.deleteHistoryRecord(first.id)
+        try model.deleteHistoryRecords([first.id])
         #expect(model.snapshot == expected)
     }
 
@@ -1100,7 +1113,8 @@ import TelefonData
 
     @Test func explicitHistoryCallPreservesUnrelatedDraftAndSelectedLine() async throws {
         let engine = TestEngine(acceptCalls: true)
-        let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: MemoryRepository(), authorizeMicrophone: { true })
+        let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: MemoryRepository(),
+                               authorizeMicrophone: { true }, purchases: testProPurchases())
         let selected = PhoneAccount(), original = PhoneAccount()
         model.snapshot.accounts = [selected, original]; model.selectedAccountID = selected.id
         model.ready = true; model.registrations = [selected.id: .registered, original.id: .registered]; model.dialText = "999"
@@ -1257,7 +1271,8 @@ import TelefonData
             credentials: EmptyCredentials(),
             repository: repository,
             authorizeMicrophone: { true },
-            initialAutomaticallyStartListCalls: true
+            initialAutomaticallyStartListCalls: true,
+            purchases: testProPurchases()
         )
         model.ready = true
         model.registrations = [account.id: .registered]
@@ -1465,7 +1480,8 @@ import TelefonData
             name: "Hetzner Online GmbH", matchedNumber: "+493745744470", exact: false
         ))
         let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: MemoryRepository(),
-                               publicCallerLookup: lookup, initialPublicCallerLookupEnabled: true)
+                               publicCallerLookup: lookup, initialPublicCallerLookupEnabled: true,
+                               purchases: testProPurchases())
 
         #expect(model.displayName("+49-3745-74447-100") == "+49-3745-74447-100")
         await model.resolvePublicCallerName("+49-3745-74447-100")
@@ -1484,7 +1500,8 @@ import TelefonData
         let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: MemoryRepository(),
                                publicCallerLookup: lookup,
                                initialPublicCallerLookupEnabled: true,
-                               persistPublicCallerLookupEnabled: { persisted = $0 })
+                               persistPublicCallerLookupEnabled: { persisted = $0 },
+                               purchases: testProPurchases())
         await model.resolvePublicCallerName("+49374574447100")
         #expect(model.displayName("+49374574447100") == "Hetzner Online GmbH")
 
@@ -1499,7 +1516,8 @@ import TelefonData
     @Test func disabledInFlightPublicLookupDoesNotPreventRetryAfterEnabling() async {
         let lookup = DeferredPublicCallerLookup()
         let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: MemoryRepository(),
-                               publicCallerLookup: lookup, initialPublicCallerLookupEnabled: true)
+                               publicCallerLookup: lookup, initialPublicCallerLookupEnabled: true,
+                               purchases: testProPurchases())
         let first = Task { await model.resolvePublicCallerName("+49374574447100") }
         while await lookup.requests == 0 { await Task.yield() }
         model.setPublicCallerLookupEnabled(false)
@@ -1514,7 +1532,8 @@ import TelefonData
     @Test func cancelledPublicCallerLookupIsNotCachedAsAMiss() async {
         let lookup = TestPublicCallerLookup(identity: nil, suspendFirstRequest: true)
         let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: MemoryRepository(),
-                               publicCallerLookup: lookup, initialPublicCallerLookupEnabled: true)
+                               publicCallerLookup: lookup, initialPublicCallerLookupEnabled: true,
+                               purchases: testProPurchases())
         let first = Task { await model.resolvePublicCallerName("+49374574447100") }
         while await lookup.requests.isEmpty { await Task.yield() }
 
@@ -1583,7 +1602,7 @@ import TelefonData
         let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: repository,
                                scheduleReminderNotification: { reminder, timing, request in
                                    await recorder.record(reminder, timing: timing, requestsAuthorization: request)
-                               })
+                               }, purchases: testProPurchases())
         let reminder = CallReminder(name: "Ada", number: "123", note: "Angebot",
                                     dueAt: Date().addingTimeInterval(3600), accountID: account.id)
 
@@ -1602,7 +1621,7 @@ import TelefonData
         #expect(model.snapshot.reminders[0].dueAt > Date())
         try model.completeReminder(reminder.id)
         #expect(model.snapshot.reminders[0].completedAt != nil)
-        try model.deleteReminder(reminder.id)
+        try model.deleteReminders([reminder.id])
         #expect(model.snapshot.reminders.isEmpty)
     }
 
@@ -1616,7 +1635,8 @@ import TelefonData
                 await recorder.record(reminder, timing: timing, requestsAuthorization: request)
             },
             initialReminderNotificationTiming: .tenMinutesBefore,
-            persistReminderNotificationTiming: { persisted.append($0) }
+            persistReminderNotificationTiming: { persisted.append($0) },
+            purchases: testProPurchases()
         )
         var reminder = CallReminder(name: "Ada", number: "123", dueAt: Date().addingTimeInterval(3600))
 
@@ -1641,7 +1661,7 @@ import TelefonData
         repository.value.accounts = [account]
         let engine = TestEngine(acceptCalls: true)
         let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: repository,
-                               authorizeMicrophone: { true })
+                               authorizeMicrophone: { true }, purchases: testProPurchases())
         model.ready = true
         model.registrations[account.id] = .registered
         model.selectedAccountID = account.id
@@ -1665,7 +1685,7 @@ import TelefonData
         repository.value.accounts = [account]
         let engine = TestEngine(acceptCalls: true)
         let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: repository,
-                               authorizeMicrophone: { true })
+                               authorizeMicrophone: { true }, purchases: testProPurchases())
         model.ready = true
         model.registrations[account.id] = .registered
         model.selectedAccountID = account.id
@@ -1683,7 +1703,8 @@ import TelefonData
 
     @Test func pastDueReminderCannotBeSavedOpenOrReopened() throws {
         let repository = MemoryRepository()
-        let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: repository)
+        let model = PhoneModel(engine: TestEngine(), credentials: EmptyCredentials(), repository: repository,
+                               purchases: testProPurchases())
         let past = Date().addingTimeInterval(-3600)
         let open = CallReminder(name: "Ada", number: "123", dueAt: past)
 
@@ -1706,7 +1727,7 @@ import TelefonData
         repository.value.accounts = [account]
         let engine = TestEngine(acceptCalls: true)
         let model = PhoneModel(engine: engine, credentials: EmptyCredentials(), repository: repository,
-                               authorizeMicrophone: { true })
+                               authorizeMicrophone: { true }, purchases: testProPurchases())
         model.ready = true
         model.registrations[account.id] = .registered
         model.selectedAccountID = account.id
@@ -1762,6 +1783,10 @@ private actor ReminderScheduleRecorder {
     }
 }
 
+@MainActor private func testProPurchases() -> PurchaseStore {
+    PurchaseStore(internalEvaluation: true, productIDs: [])
+}
+
 @MainActor private final class MemoryRepository: PhoneRepository {
     var value = AppSnapshot()
     var saveCount = 0
@@ -1772,7 +1797,7 @@ private actor ReminderScheduleRecorder {
         if failLoad { throw TestFailure.unreadable }
         return value
     }
-    func save(_ snapshot: AppSnapshot) throws {
+    func save(_ snapshot: AppSnapshot, changes: SnapshotChanges) throws {
         if failSave { throw TestFailure.unreadable }
         try snapshot.validate(); value = snapshot; saveCount += 1
     }

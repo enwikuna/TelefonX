@@ -30,7 +30,11 @@ extension PhoneModel {
             next.accounts = accounts
         }
         if next.defaultAccountID == nil { next.defaultAccountID = account.id }
-        do { try commit(next) }
+        let previousAccounts = Dictionary(uniqueKeysWithValues: snapshot.accounts.map { ($0.id, $0) })
+        let changedAccountIDs = Set(next.accounts.lazy.filter { previousAccounts[$0.id] != $0 }.map(\.id))
+        do {
+            try commit(next, changes: SnapshotChanges(accounts: .identifiers(changedAccountIDs), preferences: true))
+        }
         catch {
             if let previousPassword { try? credentials.setPassword(previousPassword, for: account.id) }
             else { try? credentials.deletePassword(for: account.id) }
@@ -46,9 +50,15 @@ extension PhoneModel {
         next.accounts.removeAll { $0.id == id }
         next.accounts = AccountOrdering.numbered(next.accounts)
         next.dialRules.removeAll { $0.accountID == id }
+        let affectedContactIDs = Set(next.contacts.lazy.filter { $0.preferredAccountID == id }.map(\.id))
         for index in next.contacts.indices where next.contacts[index].preferredAccountID == id { next.contacts[index].preferredAccountID = nil }
         if next.defaultAccountID == id { next.defaultAccountID = next.accounts.first?.id }
-        try commit(next)
+        let previousAccounts = Dictionary(uniqueKeysWithValues: snapshot.accounts.map { ($0.id, $0) })
+        var changedAccountIDs = Set(next.accounts.lazy.filter { previousAccounts[$0.id] != $0 }.map(\.id))
+        changedAccountIDs.insert(id)
+        try commit(next, changes: SnapshotChanges(accounts: .identifiers(changedAccountIDs),
+                                                  contacts: .identifiers(affectedContactIDs),
+                                                  preferences: true))
         if selectedAccountID == id { selectedAccountID = next.defaultAccountID }
         if ready { try await engine.unregister(id) }
         try credentials.deletePassword(for: id); registrations.removeValue(forKey: id)
@@ -62,7 +72,7 @@ extension PhoneModel {
         let account = next.accounts.remove(at: sourceIndex)
         next.accounts.insert(account, at: targetIndex)
         next.accounts = AccountOrdering.numbered(next.accounts)
-        do { try commit(next) } catch { report(error) }
+        do { try commit(next, changes: SnapshotChanges(accounts: .all)) } catch { report(error) }
         Task { await applyProAccessChange() }
     }
     func moveAccount(_ id: UUID, by offset: Int) {
@@ -72,57 +82,7 @@ extension PhoneModel {
         var next = snapshot
         next.accounts.swapAt(index, destination)
         next.accounts = AccountOrdering.numbered(next.accounts)
-        do { try commit(next) } catch { report(error) }
+        do { try commit(next, changes: SnapshotChanges(accounts: .all)) } catch { report(error) }
         Task { await applyProAccessChange() }
-    }
-    func saveContact(_ contact: PhoneContact) throws {
-        var contact = contact
-        var next = snapshot
-        let previous = snapshot.contacts.first { $0.id == contact.id }
-        if contact.favorite {
-            contact.favoriteNumber = ContactFavorites.number(for: contact)
-            if previous?.favorite != true {
-                let ordered = ContactFavorites.ordered(snapshot.contacts).filter { $0.id != contact.id }
-                let ranks = Dictionary(uniqueKeysWithValues: ordered.enumerated().map { ($0.element.id, $0.offset) })
-                for index in next.contacts.indices where next.contacts[index].favorite {
-                    next.contacts[index].favoriteOrder = ranks[next.contacts[index].id]
-                }
-                contact.favoriteOrder = ordered.count
-            }
-        } else { contact.favoriteNumber = nil; contact.favoriteOrder = nil }
-        if let index = next.contacts.firstIndex(where: { $0.id == contact.id }) { next.contacts[index] = contact }
-        else { next.contacts.append(contact) }
-        try commit(next)
-    }
-    func block(_ number: String) {
-        block([number])
-    }
-    func block(_ numbers: [String]) {
-        do {
-            var next = snapshot
-            var keys = Set(next.blocks.compactMap { try? CallDestination($0.number).matchingKey() })
-            for number in numbers {
-                guard let value = try? CallDestination(number), keys.insert(value.matchingKey()).inserted else { continue }
-                next.blocks.append(BlockRule(number: value.value))
-            }
-            guard next.blocks != snapshot.blocks else { return }
-            try commit(next)
-        } catch { report(error) }
-    }
-    func unblock(_ number: String) {
-        unblock([number])
-    }
-    func unblock(_ numbers: [String]) {
-        do {
-            let keys = Set(numbers.compactMap { try? CallDestination($0).matchingKey() })
-            guard !keys.isEmpty else { return }
-            var next = snapshot
-            next.blocks.removeAll { rule in
-                guard let key = try? CallDestination(rule.number).matchingKey() else { return false }
-                return keys.contains(key)
-            }
-            guard next.blocks != snapshot.blocks else { return }
-            try commit(next)
-        } catch { report(error) }
     }
 }

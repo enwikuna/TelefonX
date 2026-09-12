@@ -26,7 +26,7 @@ struct AccountTechnicalEditor: View {
                     Toggle("Require SRTP", isOn: $account.requireSRTP).disabled(account.transport != .tls)
                     Toggle("G.711 Only (Compatibility Mode)", isOn: $account.g711Only)
                     Toggle("Enable ICE", isOn: $account.useICE)
-                    Text("The best shared codec is normally selected automatically. SRTP requires TLS. STUN and TURN servers cannot be configured in this test build.").font(.caption).foregroundStyle(.secondary)
+                    Text("The best shared codec is normally selected automatically. SRTP requires TLS. TelefonX does not currently support custom STUN or TURN servers.").font(.caption).foregroundStyle(.secondary)
                 }
             }.formStyle(.grouped)
             if let error { Text(error).foregroundStyle(.red).padding(.horizontal, 22) }

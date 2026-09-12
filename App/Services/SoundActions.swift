@@ -13,7 +13,7 @@ extension PhoneModel {
             if asset != nil { try requirePro(.holdMusic) }
             var next = snapshot
             next.holdMusic = asset
-            try commit(next)
+            try commit(next, changes: SnapshotChanges(preferences: true))
         }
         catch {
             var engineRestored = !ready

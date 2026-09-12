@@ -68,41 +68,107 @@ public enum PhoneMigrationPlan: SchemaMigrationPlan {
         return state
     }
 
-    public func save(_ snapshot: AppSnapshot) throws {
+    public func save(_ snapshot: AppSnapshot, changes: SnapshotChanges) throws {
         try snapshot.validate()
         do {
-            var accounts = Dictionary(uniqueKeysWithValues: try context.fetch(FetchDescriptor<PhoneSchemaV1.AccountRow>()).map { ($0.id, $0) })
-            for value in snapshot.accounts {
-                let data = try encoder.encode(value)
-                if let row = accounts.removeValue(forKey: value.id) { if row.payload != data { row.payload = data } }
-                else { context.insert(PhoneSchemaV1.AccountRow(id: value.id, payload: data)) }
-            }
-            accounts.values.forEach(context.delete)
-            var contacts = Dictionary(uniqueKeysWithValues: try context.fetch(FetchDescriptor<PhoneSchemaV1.ContactRow>()).map { ($0.id, $0) })
-            for value in snapshot.contacts {
-                let data = try encoder.encode(value)
-                if let row = contacts.removeValue(forKey: value.id) {
-                    if row.payload != data { row.payload = data; row.name = value.name }
-                } else { context.insert(PhoneSchemaV1.ContactRow(id: value.id, name: value.name, payload: data)) }
-            }
-            contacts.values.forEach(context.delete)
-            var history = Dictionary(uniqueKeysWithValues: try context.fetch(FetchDescriptor<PhoneSchemaV1.HistoryRow>()).map { ($0.id, $0) })
-            for value in snapshot.history {
-                let data = try encoder.encode(value)
-                if let row = history.removeValue(forKey: value.id) { if row.payload != data { row.payload = data } }
-                else { context.insert(PhoneSchemaV1.HistoryRow(id: value.id, startedAt: value.startedAt, payload: data)) }
-            }
-            history.values.forEach(context.delete)
-            var metadata = snapshot
-            metadata.accounts = []; metadata.contacts = []; metadata.history = []
-            let data = try encoder.encode(metadata)
-            if let row = try context.fetch(FetchDescriptor<PhoneSchemaV1.PreferencesRow>()).first {
-                if row.payload != data { row.payload = data }
-            } else { context.insert(PhoneSchemaV1.PreferencesRow(payload: data)) }
+            try saveAccounts(snapshot.accounts, scope: changes.accounts)
+            try saveContacts(snapshot.contacts, scope: changes.contacts)
+            try saveHistory(snapshot.history, scope: changes.history)
+            if changes.preferences { try savePreferences(snapshot) }
             try context.save()
         } catch {
             context.rollback()
             throw error
         }
     }
+
+    private func saveAccounts(_ values: [PhoneAccount], scope: SnapshotChangeScope) throws {
+        switch scope {
+        case .none:
+            return
+        case .all:
+            var rows = Dictionary(uniqueKeysWithValues: try context.fetch(FetchDescriptor<PhoneSchemaV1.AccountRow>()).map { ($0.id, $0) })
+            for value in values {
+                let data = try encoder.encode(value)
+                if let row = rows.removeValue(forKey: value.id) { if row.payload != data { row.payload = data } }
+                else { context.insert(PhoneSchemaV1.AccountRow(id: value.id, payload: data)) }
+            }
+            rows.values.forEach(context.delete)
+        case .identifiers(let ids):
+            let changedValues = Dictionary(uniqueKeysWithValues: values.lazy.filter { ids.contains($0.id) }.map { ($0.id, $0) })
+            for id in ids {
+                let id = id
+                let row = try context.fetch(FetchDescriptor<PhoneSchemaV1.AccountRow>(predicate: #Predicate { $0.id == id })).first
+                if let value = changedValues[id] {
+                    let data = try encoder.encode(value)
+                    if let row { if row.payload != data { row.payload = data } }
+                    else { context.insert(PhoneSchemaV1.AccountRow(id: id, payload: data)) }
+                } else if let row { context.delete(row) }
+            }
+        }
+    }
+
+    private func saveContacts(_ values: [PhoneContact], scope: SnapshotChangeScope) throws {
+        switch scope {
+        case .none:
+            return
+        case .all:
+            var rows = Dictionary(uniqueKeysWithValues: try context.fetch(FetchDescriptor<PhoneSchemaV1.ContactRow>()).map { ($0.id, $0) })
+            for value in values {
+                let data = try encoder.encode(value)
+                if let row = rows.removeValue(forKey: value.id) {
+                    if row.payload != data { row.payload = data; row.name = value.name }
+                } else { context.insert(PhoneSchemaV1.ContactRow(id: value.id, name: value.name, payload: data)) }
+            }
+            rows.values.forEach(context.delete)
+        case .identifiers(let ids):
+            let changedValues = Dictionary(uniqueKeysWithValues: values.lazy.filter { ids.contains($0.id) }.map { ($0.id, $0) })
+            for id in ids {
+                let id = id
+                let row = try context.fetch(FetchDescriptor<PhoneSchemaV1.ContactRow>(predicate: #Predicate { $0.id == id })).first
+                if let value = changedValues[id] {
+                    let data = try encoder.encode(value)
+                    if let row {
+                        if row.payload != data { row.payload = data; row.name = value.name }
+                    } else { context.insert(PhoneSchemaV1.ContactRow(id: id, name: value.name, payload: data)) }
+                } else if let row { context.delete(row) }
+            }
+        }
+    }
+
+    private func saveHistory(_ values: [CallRecord], scope: SnapshotChangeScope) throws {
+        switch scope {
+        case .none:
+            return
+        case .all:
+            var rows = Dictionary(uniqueKeysWithValues: try context.fetch(FetchDescriptor<PhoneSchemaV1.HistoryRow>()).map { ($0.id, $0) })
+            for value in values {
+                let data = try encoder.encode(value)
+                if let row = rows.removeValue(forKey: value.id) { if row.payload != data { row.payload = data } }
+                else { context.insert(PhoneSchemaV1.HistoryRow(id: value.id, startedAt: value.startedAt, payload: data)) }
+            }
+            rows.values.forEach(context.delete)
+        case .identifiers(let ids):
+            let changedValues = Dictionary(uniqueKeysWithValues: values.lazy.filter { ids.contains($0.id) }.map { ($0.id, $0) })
+            for id in ids {
+                let id = id
+                let row = try context.fetch(FetchDescriptor<PhoneSchemaV1.HistoryRow>(predicate: #Predicate { $0.id == id })).first
+                if let value = changedValues[id] {
+                    let data = try encoder.encode(value)
+                    if let row { if row.payload != data { row.payload = data } }
+                    else { context.insert(PhoneSchemaV1.HistoryRow(id: id, startedAt: value.startedAt, payload: data)) }
+                } else if let row { context.delete(row) }
+            }
+        }
+    }
+
+    private func savePreferences(_ snapshot: AppSnapshot) throws {
+        var metadata = snapshot
+        metadata.accounts = []; metadata.contacts = []; metadata.history = []
+        let data = try encoder.encode(metadata)
+        if let row = try context.fetch(FetchDescriptor<PhoneSchemaV1.PreferencesRow>()).first {
+            if row.payload != data { row.payload = data }
+        } else { context.insert(PhoneSchemaV1.PreferencesRow(payload: data)) }
+    }
+
 }

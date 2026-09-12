@@ -20,7 +20,9 @@ import TelefonData
             try model.requirePro(.contactImportExport)
             guard let text = String(data: data, encoding: .utf8) else { throw ValidationError.invalidBackup }
             let contacts = try ContactsCSV.decode(text)
-            var next = model.snapshot; next.contacts += contacts; try model.commit(next)
+            var next = model.snapshot
+            next.contacts += contacts
+            try model.commit(next, changes: SnapshotChanges(contacts: .all))
             model.information = L10n.format("%lld contacts imported. Existing contacts were not changed.", Int64(contacts.count))
         }
     }

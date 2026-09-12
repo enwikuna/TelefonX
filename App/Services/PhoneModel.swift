@@ -149,7 +149,7 @@ private func registrationStates(
          persistUnseenMissedCallIDs: @escaping (Set<UUID>) -> Void = { _ in },
          initialFocusSyncEnabled: Bool = false,
          persistFocusSyncEnabled: @escaping (Bool) -> Void = { _ in },
-         purchases: PurchaseStore = PurchaseStore(internalEvaluation: true, productIDs: []),
+         purchases: PurchaseStore = PurchaseStore(internalEvaluation: false, productIDs: []),
          pauseMediaPlayback: @escaping () -> Void = MediaPlaybackPauser.pausePlayingApplications) {
         self.engine = engine; self.credentials = credentials
         self.dialTones = dialTones
@@ -723,7 +723,7 @@ private func registrationStates(
                 lastEndedCall = record
                 var next = snapshot; next.history.insert(record, at: 0)
                 do {
-                    try commit(next)
+                    try commit(next, changes: SnapshotChanges(history: .identifiers([record.id])))
                     if record.outcome == .missed {
                         unseenMissedCallIDs.insert(record.id)
                         persistUnseenMissedCallIDs(unseenMissedCallIDs)
@@ -829,10 +829,38 @@ private func registrationStates(
         pendingRegistrationTasks.removeValue(forKey: id)?.cancel()
         pendingRegistrationStates.removeValue(forKey: id)
     }
-    func commit(_ value: AppSnapshot) throws {
+    func commit(_ value: AppSnapshot, changes: SnapshotChanges = .all) throws {
         guard let repository, storageError == nil else { throw AppError.storageUnavailable }
-        try repository.save(value); snapshot = value
+        #if DEBUG
+        assertChangesCoverMutation(from: snapshot, to: value, changes: changes)
+        #endif
+        try repository.save(value, changes: changes); snapshot = value
     }
+    #if DEBUG
+    private func assertChangesCoverMutation(from old: AppSnapshot, to new: AppSnapshot,
+                                            changes: SnapshotChanges) {
+        func changedIDs<T: Identifiable & Equatable>(_ lhs: [T], _ rhs: [T]) -> Set<T.ID> where T.ID == UUID {
+            let old = Dictionary(uniqueKeysWithValues: lhs.map { ($0.id, $0) })
+            let new = Dictionary(uniqueKeysWithValues: rhs.map { ($0.id, $0) })
+            return Set(old.keys).union(new.keys).filter { old[$0] != new[$0] }
+        }
+        func covers(_ actual: Set<UUID>, _ scope: SnapshotChangeScope) -> Bool {
+            switch scope {
+            case .none: actual.isEmpty
+            case .identifiers(let declared): actual.isSubset(of: declared)
+            case .all: true
+            }
+        }
+        assert(covers(changedIDs(old.accounts, new.accounts), changes.accounts), "Undeclared account persistence change")
+        assert(covers(changedIDs(old.contacts, new.contacts), changes.contacts), "Undeclared contact persistence change")
+        assert(covers(changedIDs(old.history, new.history), changes.history), "Undeclared history persistence change")
+        var oldPreferences = old
+        var newPreferences = new
+        oldPreferences.accounts = []; oldPreferences.contacts = []; oldPreferences.history = []
+        newPreferences.accounts = []; newPreferences.contacts = []; newPreferences.history = []
+        assert(changes.preferences || oldPreferences == newPreferences, "Undeclared preferences persistence change")
+    }
+    #endif
     var missedCallBadgeCount: Int {
         snapshot.history.count { $0.outcome == .missed && unseenMissedCallIDs.contains($0.id) }
     }

@@ -123,7 +123,8 @@ struct AccountsSettings: View {
                         set: { id in
                             var next = model.snapshot
                             next.defaultAccountID = id
-                            do { try model.commit(next) } catch { model.report(error) }
+                            do { try model.commit(next, changes: SnapshotChanges(preferences: true)) }
+                            catch { model.report(error) }
                         }
                     )
                 ) {

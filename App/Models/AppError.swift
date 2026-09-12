@@ -33,7 +33,7 @@ enum AppError: LocalizedError, Equatable {
         case .missingPassword:
             L10n.text("Enter the SIP password for this line. It is stored only in the macOS Keychain.")
         case .unsupportedSTUN:
-            L10n.text("STUN servers cannot be configured in this test build yet. Check the network requirements of your SIP provider or phone system.")
+            L10n.text("TelefonX does not currently support custom STUN servers. Check the network requirements of your SIP provider or phone system.")
         case .reminderDateInPast:
             L10n.text("Choose a time in the future before reopening or saving the callback.")
         case .focusStatusUnavailable:

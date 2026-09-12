@@ -140,6 +140,55 @@ import TelefonDomain
         state.contacts = []; try repo.save(state)
         #expect(try repo.load().contacts.isEmpty)
     }
+
+    @MainActor @Test func incrementalPersistenceChangesOnlyDeclaredRecords() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "TelefonX-incremental-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let url = folder.appending(path: "store")
+        let account = PhoneAccount(name: "Office", username: "office", domain: "sip.example.com", sortIndex: 0)
+        let contact = PhoneContact(name: "Ada", numbers: ["101"])
+        let call = CallRecord(session: CallSession(handle: CallHandle(slot: 1, generation: 1), accountID: account.id,
+                                                   remote: "101", incoming: false, phase: .ended),
+                              accountName: account.name)
+        var state = AppSnapshot()
+        state.accounts = [account]
+        state.contacts = [contact]
+        state.history = [call]
+        state.defaultAccountID = account.id
+
+        let repository = try SwiftDataRepository(url: url)
+        try repository.save(state)
+
+        var invalidUnchangedCategory = state
+        invalidUnchangedCategory.history[0].duration = -.infinity
+        #expect(throws: ValidationError.invalidBackup) {
+            try repository.save(invalidUnchangedCategory,
+                                changes: SnapshotChanges(contacts: .identifiers([contact.id])))
+        }
+
+        var contactOnly = state
+        contactOnly.contacts[0].notes = "Updated"
+        contactOnly.history = []
+        contactOnly.defaultAccountID = nil
+        try repository.save(contactOnly, changes: SnapshotChanges(contacts: .identifiers([contact.id])))
+        var stored = try repository.load()
+        #expect(stored.contacts[0].notes == "Updated")
+        #expect(stored.history == [call])
+        #expect(stored.defaultAccountID == account.id)
+
+        var historyOnly = stored
+        historyOnly.history = []
+        try repository.save(historyOnly, changes: SnapshotChanges(history: .identifiers([call.id])))
+        stored = try repository.load()
+        #expect(stored.history.isEmpty)
+        #expect(stored.contacts[0].notes == "Updated")
+
+        var preferencesOnly = stored
+        preferencesOnly.blockAnonymous = true
+        try repository.save(preferencesOnly, changes: SnapshotChanges(preferences: true))
+        #expect(try repository.load().blockAnonymous)
+    }
     @MainActor @Test func accountOrderSurvivesDatabaseReopen() throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "TelefonX-order-test-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

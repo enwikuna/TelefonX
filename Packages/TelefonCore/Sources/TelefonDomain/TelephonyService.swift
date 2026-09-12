@@ -61,7 +61,38 @@ public protocol TelephonyService: Sendable {
 
 @MainActor public protocol PhoneRepository {
     func load() throws -> AppSnapshot
-    func save(_ snapshot: AppSnapshot) throws
+    func save(_ snapshot: AppSnapshot, changes: SnapshotChanges) throws
+}
+
+public enum SnapshotChangeScope: Equatable, Sendable {
+    case none
+    case identifiers(Set<UUID>)
+    case all
+}
+
+public struct SnapshotChanges: Equatable, Sendable {
+    public var accounts: SnapshotChangeScope
+    public var contacts: SnapshotChangeScope
+    public var history: SnapshotChangeScope
+    public var preferences: Bool
+
+    public init(accounts: SnapshotChangeScope = .none,
+                contacts: SnapshotChangeScope = .none,
+                history: SnapshotChangeScope = .none,
+                preferences: Bool = false) {
+        self.accounts = accounts
+        self.contacts = contacts
+        self.history = history
+        self.preferences = preferences
+    }
+
+    public static let all = SnapshotChanges(accounts: .all, contacts: .all, history: .all, preferences: true)
+}
+
+public extension PhoneRepository {
+    func save(_ snapshot: AppSnapshot) throws {
+        try save(snapshot, changes: .all)
+    }
 }
 
 public protocol CredentialStore: Sendable {

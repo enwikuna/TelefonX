@@ -2,6 +2,28 @@ import Foundation
 import TelefonDomain
 
 extension PhoneModel {
+    func saveContact(_ contact: PhoneContact) throws {
+        var contact = contact
+        var next = snapshot
+        let previous = snapshot.contacts.first { $0.id == contact.id }
+        if contact.favorite {
+            contact.favoriteNumber = ContactFavorites.number(for: contact)
+            if previous?.favorite != true {
+                let ordered = ContactFavorites.ordered(snapshot.contacts).filter { $0.id != contact.id }
+                let ranks = Dictionary(uniqueKeysWithValues: ordered.enumerated().map { ($0.element.id, $0.offset) })
+                for index in next.contacts.indices where next.contacts[index].favorite {
+                    next.contacts[index].favoriteOrder = ranks[next.contacts[index].id]
+                }
+                contact.favoriteOrder = ordered.count
+            }
+        } else { contact.favoriteNumber = nil; contact.favoriteOrder = nil }
+        if let index = next.contacts.firstIndex(where: { $0.id == contact.id }) { next.contacts[index] = contact }
+        else { next.contacts.append(contact) }
+        let previousContacts = Dictionary(uniqueKeysWithValues: snapshot.contacts.map { ($0.id, $0) })
+        let changedIDs = Set(next.contacts.lazy.filter { previousContacts[$0.id] != $0 }.map(\.id))
+        try commit(next, changes: SnapshotChanges(contacts: .identifiers(changedIDs)))
+    }
+
     func addContactsToFavorites(_ ids: Set<UUID>) throws {
         let additions = snapshot.contacts.filter { ids.contains($0.id) && !$0.favorite }
         guard !additions.isEmpty else { return }
@@ -25,7 +47,9 @@ extension PhoneModel {
             next.contacts[index].favoriteOrder = position
             next.contacts[index].favoriteNumber = position.flatMap { choices[$0].number }
         }
-        try commit(next)
+        let previousContacts = Dictionary(uniqueKeysWithValues: snapshot.contacts.map { ($0.id, $0) })
+        let changedIDs = Set(next.contacts.lazy.filter { previousContacts[$0.id] != $0 }.map(\.id))
+        try commit(next, changes: SnapshotChanges(contacts: .identifiers(changedIDs)))
     }
 
     func addNumber(_ raw: String, to contactID: UUID) throws {
@@ -37,18 +61,14 @@ extension PhoneModel {
         var entries = next.contacts[index].phoneNumbers
         entries.append(ContactPhoneNumber(value: number, label: .other))
         next.contacts[index].phoneNumbers = entries
-        try commit(next)
-    }
-
-    func deleteHistoryRecord(_ id: UUID) throws {
-        try deleteHistoryRecords([id])
+        try commit(next, changes: SnapshotChanges(contacts: .identifiers([contactID])))
     }
 
     func deleteHistoryRecords(_ ids: Set<UUID>) throws {
         guard !ids.isEmpty else { return }
         var next = snapshot
         next.history.removeAll { ids.contains($0.id) }
-        try commit(next)
+        try commit(next, changes: SnapshotChanges(history: .identifiers(ids)))
         removeMissedCallBadges(for: ids)
     }
 
@@ -56,7 +76,7 @@ extension PhoneModel {
         guard !ids.isEmpty else { return }
         var next = snapshot
         next.contacts.removeAll { ids.contains($0.id) }
-        try commit(next)
+        try commit(next, changes: SnapshotChanges(contacts: .identifiers(ids)))
     }
 }
 

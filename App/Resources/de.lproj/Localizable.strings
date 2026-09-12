@@ -405,7 +405,7 @@
 "SRTP Active" = "SRTP aktiv";
 "SIP Line" = "SIP-Leitung";
 "SIP Username" = "SIP-Benutzername";
-"STUN servers cannot be configured in this test build yet. Check the network requirements of your SIP provider or phone system." = "STUN-Server lassen sich in diesem Teststand noch nicht konfigurieren. Bitte die Netzwerkanforderungen deines SIP-Anbieters oder deiner Telefonanlage prüfen.";
+"TelefonX does not currently support custom STUN servers. Check the network requirements of your SIP provider or phone system." = "TelefonX unterstützt derzeit keine eigenen STUN-Server. Bitte die Netzwerkanforderungen deines SIP-Anbieters oder deiner Telefonanlage prüfen.";
 "Save" = "Sichern";
 "Save Password" = "Passwort speichern";
 "Saving" = "Wird gesichert";
@@ -452,7 +452,7 @@
 "The App Store purchase could not be verified. No features were unlocked." = "Der App Store-Kauf konnte nicht verifiziert werden. Es wurden keine Funktionen freigeschaltet.";
 "The audio file is empty or longer than ten minutes." = "Die Audiodatei ist leer oder länger als zehn Minuten.";
 "The audio file is missing on this Mac. Choose it again." = "Die Audiodatei fehlt auf diesem Mac. Bitte erneut auswählen.";
-"The best shared codec is normally selected automatically. SRTP requires TLS. STUN and TURN servers cannot be configured in this test build." = "Normalerweise wird der beste gemeinsame Codec automatisch gewählt. SRTP benötigt TLS. STUN-/TURN-Server sind in diesem Teststand nicht konfigurierbar.";
+"The best shared codec is normally selected automatically. SRTP requires TLS. TelefonX does not currently support custom STUN or TURN servers." = "Normalerweise wird der beste gemeinsame Codec automatisch gewählt. SRTP benötigt TLS. TelefonX unterstützt derzeit keine eigenen STUN- oder TURN-Server.";
 "The callback reminder will be permanently removed. Contacts and recents are retained." = "Die Rückruf-Erinnerung wird dauerhaft entfernt. Kontakte und Anrufliste bleiben erhalten.";
 "The credentials are removed. Call history is retained." = "Die Zugangsdaten werden entfernt. Der Anrufverlauf bleibt erhalten.";
 "The current call is placed on hold when you call." = "Beim Anrufen wird das laufende Gespräch gehalten.";

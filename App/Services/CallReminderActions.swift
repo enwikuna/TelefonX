@@ -19,7 +19,7 @@ extension PhoneModel {
         } else {
             next.reminders.append(reminder)
         }
-        try commit(next)
+        try commit(next, changes: SnapshotChanges(preferences: true))
         if reminder.completedAt == nil {
             scheduleReminder(reminder, requestingAuthorization: true)
         } else {
@@ -45,17 +45,13 @@ extension PhoneModel {
         try saveReminderWithoutAuthorization(updated)
     }
 
-    func deleteReminder(_ id: UUID) throws {
-        try deleteReminders([id])
-    }
-
     func deleteReminders(_ ids: Set<UUID>) throws {
         try requirePro(.callReminders)
         let removed = snapshot.reminders.filter { ids.contains($0.id) }
         guard !removed.isEmpty else { return }
         var next = snapshot
         next.reminders.removeAll { ids.contains($0.id) }
-        try commit(next)
+        try commit(next, changes: SnapshotChanges(preferences: true))
         for reminder in removed { removeReminderNotification(reminder.id) }
     }
 
@@ -68,7 +64,7 @@ extension PhoneModel {
         for index in next.reminders.indices where pendingIDs.contains(next.reminders[index].id) {
             next.reminders[index].completedAt = completedAt
         }
-        try commit(next)
+        try commit(next, changes: SnapshotChanges(preferences: true))
         for id in pendingIDs { removeReminderNotification(id) }
     }
 
@@ -115,7 +111,7 @@ extension PhoneModel {
         var next = snapshot
         guard let index = next.reminders.firstIndex(where: { $0.id == reminder.id }) else { return }
         next.reminders[index] = reminder
-        try commit(next)
+        try commit(next, changes: SnapshotChanges(preferences: true))
         if reminder.completedAt == nil {
             scheduleReminder(reminder, requestingAuthorization: false)
         } else {

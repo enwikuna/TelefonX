@@ -128,6 +128,6 @@ struct RulesSettings: View {
     }
 
     private func save(_ snapshot: AppSnapshot) {
-        do { try model.commit(snapshot) } catch { model.report(error) }
+        do { try model.commit(snapshot, changes: SnapshotChanges(preferences: true)) } catch { model.report(error) }
     }
 }
