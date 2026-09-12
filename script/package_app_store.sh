@@ -19,7 +19,8 @@ if [[ -z "$INSTALLER_IDENTITY" ]]; then
     exit 1
 fi
 
-APP_BUNDLE="$(TELEFONX_CODESIGN_IDENTITY="$APP_IDENTITY" ./script/build_and_run.sh --app-store)"
+TELEFONX_CODESIGN_IDENTITY="$APP_IDENTITY" ./script/build_and_run.sh --app-store
+APP_BUNDLE="$ROOT_DIR/dist/AppStore/TelefonX.app"
 INFO_PLIST="$APP_BUNDLE/Contents/Info.plist"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST")"
 BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$INFO_PLIST")"

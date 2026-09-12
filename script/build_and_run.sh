@@ -41,13 +41,18 @@ if [[ "$MODE" != --preview ]]; then
     profile_matches_app() {
         local candidate="$1"
         local decoded="$BUILD_TEMP/candidate.plist"
+        local profile_app_id
         security cms -D -i "$candidate" > "$decoded" 2>/dev/null || return 1
-        [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$decoded" 2>/dev/null)" == "$TEAM_ID.$BUNDLE_ID" ]] || return 1
+        profile_app_id="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$decoded" 2>/dev/null || true)"
+        if [[ -z "$profile_app_id" ]]; then
+            profile_app_id="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$decoded" 2>/dev/null || true)"
+        fi
+        [[ "$profile_app_id" == "$TEAM_ID.$BUNDLE_ID" ]] || return 1
         [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.usernotifications.communication' "$decoded" 2>/dev/null)" == "true" ]] || return 1
         [[ "$(plutil -extract ExpirationDate raw "$decoded" 2>/dev/null)" > "$(date -u +%Y-%m-%dT%H:%M:%SZ)" ]] || return 1
         if [[ "$IS_APP_STORE" == true ]]; then
             ! /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$decoded" >/dev/null 2>&1 || return 1
-            [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.security.app-sandbox' "$decoded" 2>/dev/null)" == "true" ]] || return 1
+            [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:get-task-allow' "$decoded" 2>/dev/null)" != "true" ]] || return 1
         else
             /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$decoded" 2>/dev/null | grep -Fq "$TARGET_DEVICE_ID" || return 1
         fi
