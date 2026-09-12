@@ -118,11 +118,20 @@ struct PreviewControls: View {
 }
 
 @MainActor enum PreviewFixtures {
+    private static var usesGermanLocalization: Bool {
+        Bundle.main.preferredLocalizations.first == "de"
+    }
+
+    private static func localized(_ german: String, _ english: String) -> String {
+        usesGermanLocalization ? german : english
+    }
+
     static func makeModel(muteFeedback: any MuteFeedbackPlaying = PreviewMuteFeedback(),
                           dialTones: (any DialTonePlaying)? = nil, pro: Bool = true) -> PhoneModel {
         let engine = PreviewEngine()
         let appleContacts = [
-            AppleContact(id: "preview-apple-lena", name: "Lena Beispiel", company: "Beispiel Studio",
+            AppleContact(id: "preview-apple-lena", name: "Lena Beispiel",
+                         company: localized("Beispiel Studio", "Example Studio"),
                          phoneNumbers: [ContactPhoneNumber(value: "106", label: .work)], photoData: nil),
             AppleContact(id: "preview-apple-noah", name: "Noah Muster", company: "",
                          phoneNumbers: [ContactPhoneNumber(value: "107", label: .mobile)], photoData: nil)
@@ -180,7 +189,7 @@ struct PreviewControls: View {
         model.snapshot.accounts = [account]; model.selectedAccountID = account.id
         model.registrations = [account.id: .registered]
         if scenario == .multipleLines {
-            for name in ["Büro", "Standort Süd"] {
+            for name in [localized("Büro", "Office"), localized("Standort Süd", "South Office")] {
                 var additional = PhoneAccount()
                 additional.name = name; additional.domain = "sip.example.com"; additional.username = "preview"
                 model.snapshot.accounts.append(additional)
@@ -188,7 +197,7 @@ struct PreviewControls: View {
             }
         }
         model.snapshot.contacts = [
-            PhoneContact(name: "Alex Beispiel", numbers: ["101"], group: "Vertrieb"),
+            PhoneContact(name: "Alex Beispiel", numbers: ["101"], group: localized("Vertrieb", "Sales")),
             PhoneContact(name: "Sam Muster", numbers: ["102"], group: "Support")
         ]
         if scenario == .fiveCalls {
@@ -232,8 +241,10 @@ struct PreviewControls: View {
             }
         }
         if scenario == .avatars || scenario == .favorites {
-            model.snapshot.contacts += [PhoneContact(name: "Nord Büro", company: "Nord Büro", numbers: ["103"]),
-                                        PhoneContact(name: "Foto-Test", numbers: ["104"], photoData: PreviewContactPhoto.make())]
+            let northOffice = localized("Nord Büro", "North Office")
+            model.snapshot.contacts += [PhoneContact(name: northOffice, company: northOffice, numbers: ["103"]),
+                                        PhoneContact(name: localized("Foto-Test", "Photo Test"), numbers: ["104"],
+                                                     photoData: PreviewContactPhoto.make())]
             model.snapshot.blocks = [BlockRule(number: "102")]
             model.snapshot.contacts[0].favorite = true
             for index in model.snapshot.history.indices {
@@ -261,42 +272,57 @@ struct PreviewControls: View {
                                                  to: calendar.startOfDay(for: now))!
             let remainingToday = startOfTomorrow.timeIntervalSince(now)
             model.snapshot.reminders = [
-                CallReminder(name: "Alex Beispiel", number: "101", note: "Angebot besprechen",
+                CallReminder(name: "Alex Beispiel", number: "101",
+                             note: localized("Angebot besprechen", "Discuss quote"),
                              dueAt: now.addingTimeInterval(-20 * 60), accountID: account.id,
                              contactID: model.snapshot.contacts[0].id),
-                CallReminder(name: "Petra Hoffmann", number: "105", note: "Freigabe abstimmen",
+                CallReminder(name: "Petra Hoffmann", number: "105",
+                             note: localized("Freigabe abstimmen", "Coordinate approval"),
                              dueAt: now.addingTimeInterval(-5 * 60), accountID: account.id),
-                CallReminder(name: "Jonas Wagner", number: "109", note: "Vertragsdetails klären",
+                CallReminder(name: "Jonas Wagner", number: "109",
+                             note: localized("Vertragsdetails klären", "Clarify contract details"),
                              dueAt: now.addingTimeInterval(-45 * 60), accountID: account.id),
-                CallReminder(name: "Carla Neumann", number: "110", note: "Rückruf erbeten",
+                CallReminder(name: "Carla Neumann", number: "110",
+                             note: localized("Rückruf erbeten", "Callback requested"),
                              dueAt: now.addingTimeInterval(-75 * 60), accountID: account.id),
-                CallReminder(name: "Sam Muster", number: "102", note: "Nach Liefertermin fragen",
+                CallReminder(name: "Sam Muster", number: "102",
+                             note: localized("Nach Liefertermin fragen", "Ask about the delivery date"),
                              dueAt: now.addingTimeInterval(remainingToday * 0.2), accountID: account.id,
                              contactID: model.snapshot.contacts[1].id),
-                CallReminder(name: "Mia Beispiel", number: "106", note: "Rückmeldung zum Angebot",
+                CallReminder(name: "Mia Beispiel", number: "106",
+                             note: localized("Rückmeldung zum Angebot", "Follow up on the quote"),
                              dueAt: now.addingTimeInterval(remainingToday * 0.4), accountID: account.id),
-                CallReminder(name: "Paul Richter", number: "111", note: "Projektstatus besprechen",
+                CallReminder(name: "Paul Richter", number: "111",
+                             note: localized("Projektstatus besprechen", "Discuss project status"),
                              dueAt: now.addingTimeInterval(remainingToday * 0.6), accountID: account.id),
-                CallReminder(name: "Eva Sommer", number: "112", note: "Termin neu abstimmen",
+                CallReminder(name: "Eva Sommer", number: "112",
+                             note: localized("Termin neu abstimmen", "Reschedule appointment"),
                              dueAt: now.addingTimeInterval(remainingToday * 0.8), accountID: account.id),
-                CallReminder(name: "Nord Büro", number: "103", note: "",
+                CallReminder(name: localized("Nord Büro", "North Office"), number: "103", note: "",
                              dueAt: calendar.date(byAdding: .day, value: 2, to: now)!, accountID: account.id),
-                CallReminder(name: "Süd Büro", number: "107", note: "Termin bestätigen",
+                CallReminder(name: localized("Süd Büro", "South Office"), number: "107",
+                             note: localized("Termin bestätigen", "Confirm appointment"),
                              dueAt: calendar.date(byAdding: .day, value: 3, to: now)!, accountID: account.id),
-                CallReminder(name: "West Büro", number: "113", note: "Unterlagen nachreichen",
+                CallReminder(name: localized("West Büro", "West Office"), number: "113",
+                             note: localized("Unterlagen nachreichen", "Send remaining documents"),
                              dueAt: calendar.date(byAdding: .day, value: 4, to: now)!, accountID: account.id),
-                CallReminder(name: "Ost Büro", number: "114", note: "Budget abstimmen",
+                CallReminder(name: localized("Ost Büro", "East Office"), number: "114",
+                             note: localized("Budget abstimmen", "Discuss budget"),
                              dueAt: calendar.date(byAdding: .day, value: 5, to: now)!, accountID: account.id),
-                CallReminder(name: "Chris Demo", number: "104", note: "Unterlagen sind angekommen",
+                CallReminder(name: "Chris Demo", number: "104",
+                             note: localized("Unterlagen sind angekommen", "Documents received"),
                              dueAt: now.addingTimeInterval(-86_400), completedAt: now.addingTimeInterval(-3600),
                              accountID: account.id),
-                CallReminder(name: "Lena Beispiel", number: "108", note: "Angebot versendet",
+                CallReminder(name: "Lena Beispiel", number: "108",
+                             note: localized("Angebot versendet", "Quote sent"),
                              dueAt: now.addingTimeInterval(-172_800), completedAt: now.addingTimeInterval(-7200),
                              accountID: account.id),
-                CallReminder(name: "Robert Klein", number: "115", note: "Rückfrage erledigt",
+                CallReminder(name: "Robert Klein", number: "115",
+                             note: localized("Rückfrage erledigt", "Question resolved"),
                              dueAt: now.addingTimeInterval(-259_200), completedAt: now.addingTimeInterval(-10_800),
                              accountID: account.id),
-                CallReminder(name: "Anna Fischer", number: "116", note: "Termin bestätigt",
+                CallReminder(name: "Anna Fischer", number: "116",
+                             note: localized("Termin bestätigt", "Appointment confirmed"),
                              dueAt: now.addingTimeInterval(-345_600), completedAt: now.addingTimeInterval(-14_400),
                              accountID: account.id)
             ]

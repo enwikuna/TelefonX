@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 MODE="${1:-run}"
-case "$MODE" in run|--verify|--build|--debug|--logs|--telemetry|--preview) ;; *) echo "Usage: $0 [--build|--verify|--debug|--logs|--telemetry|--preview]" >&2; exit 2 ;; esac
+case "$MODE" in run|--verify|--build|--app-store|--debug|--logs|--telemetry|--preview) ;; *) echo "Usage: $0 [--build|--app-store|--verify|--debug|--logs|--telemetry|--preview]" >&2; exit 2 ;; esac
 BUILD_CONFIGURATION="${TELEFONX_BUILD_CONFIGURATION:-debug}"
 case "$BUILD_CONFIGURATION" in debug|release) ;; *) echo "TELEFONX_BUILD_CONFIGURATION must be debug or release." >&2; exit 2 ;; esac
 APP_NAME="TelefonX"
@@ -12,6 +12,7 @@ TEAM_ID="AQYNC445G8"
 ENTITLEMENTS="script/TelefonX.entitlements"
 SIGNING_IDENTITY="${TELEFONX_CODESIGN_IDENTITY:-}"
 PROVISIONING_PROFILE="${TELEFONX_PROVISIONING_PROFILE:-}"
+IS_APP_STORE=false
 BUILD_TEMP="$(mktemp -d /tmp/TelefonXBuild.XXXXXX)"
 trap 'rm -rf -- "$BUILD_TEMP"' EXIT
 if [[ "$MODE" == --preview ]]; then
@@ -19,15 +20,21 @@ if [[ "$MODE" == --preview ]]; then
     BUNDLE_ID="de.enwikuna.TelefonX.preview"
     ENTITLEMENTS="script/Preview.entitlements"
     SIGNING_IDENTITY="-"
+elif [[ "$MODE" == --app-store ]]; then
+    IS_APP_STORE=true
+    BUILD_CONFIGURATION=release
 fi
 if [[ "$(uname -m)" != arm64 ]]; then echo "TelefonX requires Apple Silicon." >&2; exit 1; fi
 if [[ "$MODE" != --preview ]]; then
-    TARGET_DEVICE_ID="${TELEFONX_TARGET_DEVICE_ID:-}"
-    if [[ -z "$TARGET_DEVICE_ID" ]]; then
-        TARGET_DEVICE_ID="$(system_profiler SPHardwareDataType | awk -F': ' '/Provisioning UDID/{print $2; exit}')"
+    TARGET_DEVICE_ID=""
+    if [[ "$IS_APP_STORE" != true ]]; then
+        TARGET_DEVICE_ID="${TELEFONX_TARGET_DEVICE_ID:-}"
         if [[ -z "$TARGET_DEVICE_ID" ]]; then
-            echo "Could not determine this Mac's Provisioning UDID." >&2
-            exit 1
+            TARGET_DEVICE_ID="$(system_profiler SPHardwareDataType | awk -F': ' '/Provisioning UDID/{print $2; exit}')"
+            if [[ -z "$TARGET_DEVICE_ID" ]]; then
+                echo "Could not determine this Mac's Provisioning UDID." >&2
+                exit 1
+            fi
         fi
     fi
 
@@ -37,13 +44,22 @@ if [[ "$MODE" != --preview ]]; then
         security cms -D -i "$candidate" > "$decoded" 2>/dev/null || return 1
         [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$decoded" 2>/dev/null)" == "$TEAM_ID.$BUNDLE_ID" ]] || return 1
         [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.usernotifications.communication' "$decoded" 2>/dev/null)" == "true" ]] || return 1
-        /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$decoded" 2>/dev/null | grep -Fq "$TARGET_DEVICE_ID" || return 1
         [[ "$(plutil -extract ExpirationDate raw "$decoded" 2>/dev/null)" > "$(date -u +%Y-%m-%dT%H:%M:%SZ)" ]] || return 1
+        if [[ "$IS_APP_STORE" == true ]]; then
+            ! /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$decoded" >/dev/null 2>&1 || return 1
+            [[ "$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.security.app-sandbox' "$decoded" 2>/dev/null)" == "true" ]] || return 1
+        else
+            /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$decoded" 2>/dev/null | grep -Fq "$TARGET_DEVICE_ID" || return 1
+        fi
     }
 
     if [[ -n "$PROVISIONING_PROFILE" ]]; then
         if [[ ! -f "$PROVISIONING_PROFILE" ]] || ! profile_matches_app "$PROVISIONING_PROFILE"; then
-            echo "TELEFONX_PROVISIONING_PROFILE is not a valid current TelefonX development profile for the target Mac." >&2
+            if [[ "$IS_APP_STORE" == true ]]; then
+                echo "TELEFONX_PROVISIONING_PROFILE is not a valid current Mac App Store Connect profile for TelefonX." >&2
+            else
+                echo "TELEFONX_PROVISIONING_PROFILE is not a valid current TelefonX development profile for the target Mac." >&2
+            fi
             exit 1
         fi
     else
@@ -65,7 +81,11 @@ if [[ "$MODE" != --preview ]]; then
         done
         shopt -u nullglob
         if [[ -z "$PROVISIONING_PROFILE" ]]; then
-            echo "No valid TelefonX development profile for the target Mac was found. Install it in Xcode or set TELEFONX_PROVISIONING_PROFILE." >&2
+            if [[ "$IS_APP_STORE" == true ]]; then
+                echo "No valid TelefonX Mac App Store Connect profile was found. Install it in Xcode or set TELEFONX_PROVISIONING_PROFILE." >&2
+            else
+                echo "No valid TelefonX development profile for the target Mac was found. Install it in Xcode or set TELEFONX_PROVISIONING_PROFILE." >&2
+            fi
             exit 1
         fi
     fi
@@ -111,6 +131,13 @@ if [[ "$MODE" != --preview ]]; then
         echo "No locally available signing identity permitted by the TelefonX provisioning profile was selected." >&2
         exit 1
     fi
+    if [[ "$IS_APP_STORE" == true ]]; then
+        SELECTED_IDENTITY_LINE="$(printf '%s\n' "$AVAILABLE_IDENTITIES" | grep -F "$SIGNING_IDENTITY" || true)"
+        if [[ "$SELECTED_IDENTITY_LINE" != *'Apple Distribution:'* && "$SELECTED_IDENTITY_LINE" != *'Mac App Distribution:'* ]]; then
+            echo "The Mac App Store build must use an Apple Distribution or Mac App Distribution identity." >&2
+            exit 1
+        fi
+    fi
 
     SIGNING_ENTITLEMENTS="$BUILD_TEMP/TelefonX.entitlements"
     cp "$ENTITLEMENTS" "$SIGNING_ENTITLEMENTS"
@@ -122,7 +149,7 @@ if [[ ! -f Vendor/Install/lib/libTelefonSIP.a ]]; then ./script/build_dependenci
 PRIVACY_MANIFEST="App/Resources/PrivacyInfo.xcprivacy"
 plutil -lint "$PRIVACY_MANIFEST" >/dev/null
 # Graceful quit preserves history and lets the app ask about active calls.
-if pgrep -x "$APP_NAME" >/dev/null; then
+if [[ "$IS_APP_STORE" != true ]] && pgrep -x "$APP_NAME" >/dev/null; then
     if ! osascript \
         -e 'with timeout of 5 seconds' \
         -e "tell application id \"$BUNDLE_ID\" to quit" \
@@ -138,7 +165,11 @@ if [[ "$BUILD_CONFIGURATION" == release ]]; then
 fi
 ./script/swift.sh build "${SWIFT_BUILD_ARGUMENTS[@]}"
 BIN_DIR="$(./script/swift.sh build "${SWIFT_BUILD_ARGUMENTS[@]}" --show-bin-path)"
-APP_BUNDLE="$ROOT_DIR/dist/$APP_NAME.app"
+if [[ "$IS_APP_STORE" == true ]]; then
+    APP_BUNDLE="$ROOT_DIR/dist/AppStore/$APP_NAME.app"
+else
+    APP_BUNDLE="$ROOT_DIR/dist/$APP_NAME.app"
+fi
 if [[ -d "$APP_BUNDLE" ]]; then
     rm -rf "$APP_BUNDLE"
 fi
@@ -216,14 +247,22 @@ if [[ "$MODE" != --preview ]]; then
     [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.application-identifier' "$SIGNED_ENTITLEMENTS")" == "$TEAM_ID.$BUNDLE_ID" ]]
     [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.usernotifications.communication' "$SIGNED_ENTITLEMENTS")" == "true" ]]
     [[ "$(plutil -extract UUID raw "$EMBEDDED_PROFILE")" == "$(plutil -extract UUID raw "$PROFILE_PLIST")" ]]
+    if [[ "$IS_APP_STORE" == true ]]; then
+        if [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.get-task-allow' "$SIGNED_ENTITLEMENTS" 2>/dev/null || true)" == "true" ]]; then
+            echo "Mac App Store builds must not contain com.apple.security.get-task-allow=true." >&2
+            exit 1
+        fi
+        [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$SIGNED_ENTITLEMENTS")" == "true" ]]
+    fi
 fi
-if [[ "$MODE" != --preview && "$MODE" != --build ]]; then
+if [[ "$MODE" != --preview && "$MODE" != --build && "$MODE" != --app-store ]]; then
     LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
     "$LSREGISTER" -f "$APP_BUNDLE"
     /System/Library/CoreServices/pbs -update
 fi
 case "$MODE" in
     --build) echo "$APP_BUNDLE" ;;
+    --app-store) echo "$APP_BUNDLE" ;;
     run) open -n "$APP_BUNDLE" ;;
     --preview) open -n "$APP_BUNDLE"; sleep 2; pgrep -x "$APP_NAME" >/dev/null; echo "Isolated UI preview launched successfully." ;;
     --verify) open -n "$APP_BUNDLE"; sleep 2; pgrep -x TelefonX >/dev/null; echo "TelefonX launched successfully." ;;

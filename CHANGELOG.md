@@ -3,7 +3,7 @@
 This file records notable user-facing changes to TelefonX. Entries are grouped
 by release and written for users rather than as an internal development log.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-09-12
 
 Initial public release.
 

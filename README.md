@@ -83,11 +83,12 @@ microphone is requested only for the corresponding features.
 
 Apple Contacts are displayed as a read-only source. TelefonX does not modify them.
 
-## Project status
+## Release status
 
-TelefonX is currently a prerelease project. Compatibility with providers, phone
-systems, networks and audio hardware can differ. Please do not rely on it as your
-only telephone until you have tested your setup thoroughly.
+TelefonX 1.0.0 is the first public release. Compatibility with providers, phone
+systems, networks and audio hardware can differ. Test your setup before relying
+on TelefonX for business-critical calls, and always keep another way to place
+emergency calls available.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for the complete list of user-facing features
 and release changes.
@@ -99,4 +100,6 @@ Copyright © 2025–2026 Enwikuna.
 TelefonX is free software licensed under the
 [GNU General Public License, version 3 or later](LICENSE). Third-party components
 remain subject to their respective licenses; the applicable notices are included
-in the app bundle.
+in the app bundle. The complete source code and reproducible build instructions
+for every public release are available in this repository; release tags identify
+the source corresponding to published binaries.
