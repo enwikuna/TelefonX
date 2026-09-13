@@ -151,15 +151,28 @@ struct AccountsSettings: View {
             titleVisibility: .visible
         ) {
             Button("Delete Line and Password", role: .destructive) {
-                guard let deleting else { return }
-                Task {
-                    do { try await model.deleteAccount(deleting.id) }
-                    catch { model.report(error) }
-                    self.deleting = nil
+                deleteSelectedAccount(includingHistory: false)
+            }
+            if let deleting, model.snapshot.history.contains(where: { $0.accountID == deleting.id }) {
+                Button("Delete Line, Password, and Call History", role: .destructive) {
+                    deleteSelectedAccount(includingHistory: true)
                 }
             }
         } message: {
-            Text("The credentials are removed. Call history is retained.")
+            if let deleting, model.snapshot.history.contains(where: { $0.accountID == deleting.id }) {
+                Text("Choose whether to retain or permanently delete this line's call history. Contacts are retained.")
+            } else {
+                Text("The credentials are removed. Contacts are retained.")
+            }
+        }
+    }
+
+    private func deleteSelectedAccount(includingHistory: Bool) {
+        guard let deleting else { return }
+        Task {
+            do { try await model.deleteAccount(deleting.id, includingHistory: includingHistory) }
+            catch { model.report(error) }
+            self.deleting = nil
         }
     }
 

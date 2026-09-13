@@ -78,18 +78,16 @@ final class HeaderFadeScrollView: InsetListScrollView {
         updateFade()
     }
 
-    override func reflectScrolledClipView(_ clipView: NSClipView) {
-        super.reflectScrolledClipView(clipView)
-        updateFade()
-    }
-
     private func updateFade() {
-        guard let fadeHeight, fadeHeight > 0, contentView.bounds.height > 0 else {
-            contentView.layer?.mask = nil
+        // The clip view's bounds move with every scroll event. Mask the fixed
+        // scroll viewport instead so a fast scroll cannot outrun the fade by a frame.
+        contentView.layer?.mask = nil
+        guard let fadeHeight, fadeHeight > 0, bounds.height > 0 else {
+            layer?.mask = nil
             return
         }
-        contentView.wantsLayer = true
-        let height = contentView.bounds.height
+        wantsLayer = true
+        let height = bounds.height
         let boundary = min(height, max(0, contentInsets.top))
         let visibleEnd = max(0, (height - boundary - 4) / height)
         func location(_ progress: CGFloat) -> NSNumber {
@@ -97,17 +95,17 @@ final class HeaderFadeScrollView: InsetListScrollView {
         }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        fade.frame = contentView.bounds
+        fade.frame = layer?.bounds ?? bounds
         fade.startPoint = CGPoint(x: 0.5, y: 1)
         fade.endPoint = CGPoint(x: 0.5, y: 0)
         fade.colors = [NSColor.black.cgColor, NSColor.black.cgColor,
-                       NSColor.black.withAlphaComponent(0.6).cgColor,
-                       NSColor.black.withAlphaComponent(0.25).cgColor,
-                       NSColor.black.withAlphaComponent(0.07).cgColor,
+                       NSColor.black.withAlphaComponent(0.42).cgColor,
+                       NSColor.black.withAlphaComponent(0.14).cgColor,
+                       NSColor.black.withAlphaComponent(0.03).cgColor,
                        NSColor.clear.cgColor, NSColor.clear.cgColor]
         fade.locations = [0, NSNumber(value: visibleEnd), location(1.0 / 6),
                           location(0.36), location(2.0 / 3), location(1), 1]
-        contentView.layer?.mask = fade
+        layer?.mask = fade
         CATransaction.commit()
     }
 }

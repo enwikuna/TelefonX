@@ -155,6 +155,7 @@
 "Delete Contact?" = "Kontakt löschen?";
 "Delete Last Character" = "Letztes Zeichen löschen";
 "Delete Line and Password" = "Leitung und Passwort löschen";
+"Delete Line, Password, and Call History" = "Leitung, Passwort und Anrufverlauf löschen";
 "Delete Line …" = "Leitung löschen …";
 "Delete Line?" = "Leitung löschen?";
 "Delete …" = "Löschen …";
@@ -455,6 +456,8 @@
 "The best shared codec is normally selected automatically. SRTP requires TLS. TelefonX does not currently support custom STUN or TURN servers." = "Normalerweise wird der beste gemeinsame Codec automatisch gewählt. SRTP benötigt TLS. TelefonX unterstützt derzeit keine eigenen STUN- oder TURN-Server.";
 "The callback reminder will be permanently removed. Contacts and recents are retained." = "Die Rückruf-Erinnerung wird dauerhaft entfernt. Kontakte und Anrufliste bleiben erhalten.";
 "The credentials are removed. Call history is retained." = "Die Zugangsdaten werden entfernt. Der Anrufverlauf bleibt erhalten.";
+"Choose whether to retain or permanently delete this line's call history. Contacts are retained." = "Wähle, ob der Anrufverlauf dieser Leitung erhalten oder dauerhaft gelöscht werden soll. Kontakte bleiben erhalten.";
+"The credentials are removed. Contacts are retained." = "Die Zugangsdaten werden entfernt. Kontakte bleiben erhalten.";
 "The current call is placed on hold when you call." = "Beim Anrufen wird das laufende Gespräch gehalten.";
 "The default applies to callbacks without an individual selection. You can override it in the callback dialog." = "Der Standard gilt für Rückrufe ohne eigene Auswahl. Im Rückrufdialog kann er individuell überschrieben werden.";
 "The diagnostics export contains no passwords, phone numbers, contact names, or call content." = "Keine Passwörter, Telefonnummern, Kontaktnamen oder Gesprächsinhalte im Diagnoseexport.";
@@ -574,6 +577,8 @@
 "Plan callbacks with dates, notes, and reminders. Your saved callbacks are retained and can be exported." = "Plane Rückrufe mit Terminen, Notizen und Erinnerungen. Deine gespeicherten Rückrufe bleiben erhalten und können exportiert werden.";
 
 "Export Saved Callbacks …" = "Gespeicherte Rückrufe exportieren …";
+"Export Saved Recents …" = "Gespeicherten Anrufverlauf exportieren …";
+"TelefonX Recents.csv" = "TelefonX Anrufverlauf.csv";
 
 "TelefonX Callbacks.csv" = "TelefonX Rückrufe.csv";
 

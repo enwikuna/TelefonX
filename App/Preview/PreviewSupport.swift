@@ -73,8 +73,8 @@ struct PreviewHarness: View {
     let presentation: PreviewPresentation
 
     var body: some View {
+        // Preserve the window's native toolbar/scroll-view association across scenarios.
         MainView(initialSection: presentation.scenario.initialSection)
-            .id(presentation.scenario)
             .onChange(of: presentation.scenario) { _, value in PreviewFixtures.apply(value, to: model) }
             .preferredColorScheme(presentation.colorScheme)
             .task(id: presentation.scenario) {

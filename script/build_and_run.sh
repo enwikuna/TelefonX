@@ -2,6 +2,7 @@
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+DIST_DIR="${TELEFONX_DIST_DIR:-$ROOT_DIR/dist}"
 MODE="${1:-run}"
 case "$MODE" in run|--verify|--build|--app-store|--debug|--logs|--telemetry|--preview) ;; *) echo "Usage: $0 [--build|--app-store|--verify|--debug|--logs|--telemetry|--preview]" >&2; exit 2 ;; esac
 BUILD_CONFIGURATION="${TELEFONX_BUILD_CONFIGURATION:-debug}"
@@ -24,6 +25,19 @@ elif [[ "$MODE" == --app-store ]]; then
     IS_APP_STORE=true
     BUILD_CONFIGURATION=release
 fi
+if [[ "$IS_APP_STORE" == true ]]; then
+    APP_BUNDLE="$DIST_DIR/AppStore/$APP_NAME.app"
+else
+    APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
+fi
+
+app_bundle_is_running() {
+    ps -axo command= | awk -v executable="$APP_BUNDLE/Contents/MacOS/$APP_NAME" '
+        $0 == executable { found = 1 }
+        END { exit !found }
+    '
+}
+
 if [[ "$(uname -m)" != arm64 ]]; then echo "TelefonX requires Apple Silicon." >&2; exit 1; fi
 if [[ "$MODE" != --preview ]]; then
     TARGET_DEVICE_ID=""
@@ -154,16 +168,17 @@ fi
 if [[ ! -f Vendor/Install/lib/libTelefonSIP.a ]]; then ./script/build_dependencies.sh; fi
 PRIVACY_MANIFEST="App/Resources/PrivacyInfo.xcprivacy"
 plutil -lint "$PRIVACY_MANIFEST" >/dev/null
-# Graceful quit preserves history and lets the app ask about active calls.
-if [[ "$IS_APP_STORE" != true ]] && pgrep -x "$APP_NAME" >/dev/null; then
+# Graceful quit preserves history and lets the app ask about active calls. An
+# isolated output directory never replaces the running development bundle.
+if [[ "$IS_APP_STORE" != true && "$DIST_DIR" == "$ROOT_DIR/dist" ]] && app_bundle_is_running; then
     if ! osascript \
         -e 'with timeout of 5 seconds' \
         -e "tell application id \"$BUNDLE_ID\" to quit" \
         -e 'end timeout'; then
         echo "$APP_NAME did not immediately accept the quit request; waiting for an open call confirmation." >&2
     fi
-    for attempt in {1..20}; do if ! pgrep -x "$APP_NAME" >/dev/null; then break; fi; sleep 0.5; done
-    if pgrep -x "$APP_NAME" >/dev/null; then echo "$APP_NAME is still running; build cancelled without forcing calls to end." >&2; exit 1; fi
+    for attempt in {1..20}; do if ! app_bundle_is_running; then break; fi; sleep 0.5; done
+    if app_bundle_is_running; then echo "$APP_NAME is still running; build cancelled without forcing calls to end." >&2; exit 1; fi
 fi
 SWIFT_BUILD_ARGUMENTS=(-c "$BUILD_CONFIGURATION")
 if [[ "$BUILD_CONFIGURATION" == release ]]; then
@@ -171,11 +186,6 @@ if [[ "$BUILD_CONFIGURATION" == release ]]; then
 fi
 ./script/swift.sh build "${SWIFT_BUILD_ARGUMENTS[@]}"
 BIN_DIR="$(./script/swift.sh build "${SWIFT_BUILD_ARGUMENTS[@]}" --show-bin-path)"
-if [[ "$IS_APP_STORE" == true ]]; then
-    APP_BUNDLE="$ROOT_DIR/dist/AppStore/$APP_NAME.app"
-else
-    APP_BUNDLE="$ROOT_DIR/dist/$APP_NAME.app"
-fi
 if [[ -d "$APP_BUNDLE" ]]; then
     rm -rf "$APP_BUNDLE"
 fi
@@ -270,8 +280,8 @@ case "$MODE" in
     --build) echo "$APP_BUNDLE" ;;
     --app-store) echo "$APP_BUNDLE" ;;
     run) open -n "$APP_BUNDLE" ;;
-    --preview) open -n "$APP_BUNDLE"; sleep 2; pgrep -x "$APP_NAME" >/dev/null; echo "Isolated UI preview launched successfully." ;;
-    --verify) open -n "$APP_BUNDLE"; sleep 2; pgrep -x TelefonX >/dev/null; echo "TelefonX launched successfully." ;;
+    --preview) open -n "$APP_BUNDLE"; sleep 2; app_bundle_is_running; echo "Isolated UI preview launched successfully." ;;
+    --verify) open -n "$APP_BUNDLE"; sleep 2; app_bundle_is_running; echo "TelefonX launched successfully." ;;
     --debug) open -n "$APP_BUNDLE"; lldb -n TelefonX ;;
     --logs) open -n "$APP_BUNDLE"; /usr/bin/log stream --info --style compact --predicate 'process == "TelefonX"' ;;
     --telemetry) open -n "$APP_BUNDLE"; /usr/bin/log stream --info --style compact --predicate 'subsystem == "de.enwikuna.TelefonX"' ;;

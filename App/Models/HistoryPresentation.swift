@@ -35,6 +35,10 @@ enum HistoryFilter: String, CaseIterable, Identifiable {
 }
 
 enum HistoryPresentation {
+    static func blockedSymbol(for remote: String, rules: [BlockRule]) -> String? {
+        Routing.isBlocked(remote, rules: rules, anonymous: false) ? "hand.raised.fill" : nil
+    }
+
     static func contactDraft(number: String, displayName: String) -> PhoneContact {
         let suggestedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         return PhoneContact(name: suggestedName == number || suggestedName.isEmpty ? "" : suggestedName,

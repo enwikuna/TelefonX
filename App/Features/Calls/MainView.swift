@@ -90,17 +90,24 @@ struct MainView: View {
             if model.storageError != nil {
                 ContentUnavailableView("Data Store Unavailable", systemImage: "externaldrive.badge.exclamationmark", description: Text(model.storageError ?? ""))
                     .windowCenteredEmptyState()
+                    .scrollableEmptyState()
             } else if model.snapshot.accounts.isEmpty && section == .history {
                 ContentUnavailableView {
                     Label("Your Mac. Your Phone.", systemImage: "phone.connection")
                 } description: {
                     Text("Connect your first SIP line.\nCalls, contacts, and every location in one place.")
                 } actions: {
-                    SettingsLink { Text("Configure a Line in Settings …") }.telefonButtonStyle(.prominent)
+                    VStack(spacing: 10) {
+                        SettingsLink { Text("Configure a Line in Settings …") }
+                            .telefonButtonStyle(.prominent)
+                        if !model.snapshot.history.isEmpty {
+                            Button("Export Saved Recents …") { FileActions.exportHistoryCSV(model) }
+                        }
+                    }
                 }
                 .windowCenteredEmptyState()
                 .listToolbarTitle("Recents", subtitle: L10n.text("No Line"))
-                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+                .scrollableEmptyState()
             } else if section == .contacts || section == .favorites {
                 ContactsView(searchState: searchState(for: section ?? .contacts),
                              favoritesOnly: section == .favorites)
@@ -239,11 +246,9 @@ private struct CallerIDSuppressionButton: View {
             Button { model.toggleCallerIDSuppressionForNextCall() } label: {
                 Image(systemName: model.suppressCallerIDOnce ? "shield.fill" : "shield")
                     .foregroundStyle(model.suppressCallerIDOnce ? Color.accentColor : Color.primary)
-                    .frame(width: phoneWorkspaceToolbarControlSize,
-                           height: phoneWorkspaceToolbarControlSize)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Circle())
             }
-            .buttonStyle(.plain)
             .phoneWorkspaceToolbarButtonSurface()
             .help(model.suppressCallerIDOnce
                   ? "Disable Caller ID Hiding for Next Call"
@@ -261,8 +266,10 @@ private extension View {
     }
 
     @ViewBuilder func phoneWorkspaceToolbarButtonSurface() -> some View {
-        contentShape(Circle())
-            .glassEffect(.regular.interactive(), in: .circle)
+        buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .frame(width: phoneWorkspaceToolbarControlSize,
+                   height: phoneWorkspaceToolbarControlSize)
     }
 }
 
@@ -293,11 +300,9 @@ private struct DoNotDisturbButton: View {
             } label: {
                 Image(systemName: model.doNotDisturb ? "bell.slash.fill" : "bell")
                     .foregroundStyle(model.doNotDisturb ? Color.accentColor : Color.primary)
-                    .frame(width: phoneWorkspaceToolbarControlSize,
-                           height: phoneWorkspaceToolbarControlSize)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Circle())
             }
-            .buttonStyle(.plain)
             .phoneWorkspaceToolbarButtonSurface()
             .overlay {
                 NativeDoNotDisturbMenuPresenter(isPresented: $showsActivationOptions) { duration in

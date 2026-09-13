@@ -43,13 +43,17 @@ extension PhoneModel {
         if selectedAccountID == nil { selectedAccountID = account.id }
         if ready { try await engine.unregister(account.id); await register(account) }
     }
-    func deleteAccount(_ id: UUID) async throws {
+    func deleteAccount(_ id: UUID, includingHistory: Bool) async throws {
         guard activeCalls.isEmpty, !callOperationPending, !configurationBusy else { throw AppError.callInProgress }
         configurationBusy = true; defer { configurationBusy = false }
         var next = snapshot
         next.accounts.removeAll { $0.id == id }
         next.accounts = AccountOrdering.numbered(next.accounts)
         next.dialRules.removeAll { $0.accountID == id }
+        let removedHistoryIDs = includingHistory
+            ? Set(next.history.lazy.filter { $0.accountID == id }.map(\.id))
+            : []
+        if includingHistory { next.history.removeAll { $0.accountID == id } }
         let affectedContactIDs = Set(next.contacts.lazy.filter { $0.preferredAccountID == id }.map(\.id))
         for index in next.contacts.indices where next.contacts[index].preferredAccountID == id { next.contacts[index].preferredAccountID = nil }
         if next.defaultAccountID == id { next.defaultAccountID = next.accounts.first?.id }
@@ -58,7 +62,9 @@ extension PhoneModel {
         changedAccountIDs.insert(id)
         try commit(next, changes: SnapshotChanges(accounts: .identifiers(changedAccountIDs),
                                                   contacts: .identifiers(affectedContactIDs),
+                                                  history: removedHistoryIDs.isEmpty ? .none : .identifiers(removedHistoryIDs),
                                                   preferences: true))
+        removeMissedCallBadges(for: removedHistoryIDs)
         if selectedAccountID == id { selectedAccountID = next.defaultAccountID }
         if ready { try await engine.unregister(id) }
         try credentials.deletePassword(for: id); registrations.removeValue(forKey: id)

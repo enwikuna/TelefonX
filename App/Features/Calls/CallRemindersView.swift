@@ -38,6 +38,7 @@ struct CallRemindersView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .listToolbarTitle("Call Reminders", subtitle: L10n.text("TelefonX Pro"))
+                .scrollableEmptyState()
             }
         }
         .onChange(of: model.canUseReminders) { _, available in
@@ -75,8 +76,6 @@ struct CallRemindersView: View {
         }
         .onChange(of: visible.map(\.id)) { _, ids in selection.formIntersection(ids) }
         .navigationSubtitle(countText)
-        .toolbarBackgroundVisibility(visible.isEmpty && model.snapshot.accounts.isEmpty ? .hidden : .automatic,
-                                     for: .windowToolbar)
         .listToolbar("Call Reminders", subtitle: countText,
                      state: $searchState, prompt: "Search Call Reminders",
                      showsSearch: !model.snapshot.reminders.isEmpty, retainsActions: true) {

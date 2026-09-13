@@ -20,6 +20,15 @@ extension View {
             .contentShape(Circle())
             .glassEffect(.regular.interactive(), in: .circle)
     }
+
+    /// Keeps inline validation errors clear of the form above while leaving
+    /// the dialog's normal layout unchanged when no error is present.
+    func telefonDialogErrorStyle(horizontalPadding: CGFloat = 22) -> some View {
+        font(.callout)
+            .foregroundStyle(.red)
+            .padding(.top, 12)
+            .padding(.horizontal, horizontalPadding)
+    }
 }
 
 struct GlassControls<Content: View>: View {

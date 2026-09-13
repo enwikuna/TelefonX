@@ -60,6 +60,13 @@ import TelefonDomain
         #expect(HistoryPresentation.secondaryText(record, displayName: "01731234567") == "Enwikuna · 0:10")
     }
 
+    @Test func blockedNumbersShowAHandBesideTheirHistoryName() {
+        let rules = [BlockRule(number: "+497111234567")]
+        #expect(HistoryPresentation.blockedSymbol(for: "0711 1234567", rules: rules) == "hand.raised.fill")
+        #expect(HistoryPresentation.blockedSymbol(for: "0711 7654321", rules: rules) == nil)
+        #expect(HistoryPresentation.blockedSymbol(for: "anonymous", rules: rules) == nil)
+    }
+
     @Test func newContactDraftUsesAResolvedCallerNameButNeverTheNumberAsAName() {
         let resolved = HistoryPresentation.contactDraft(number: "+49374574447100",
                                                         displayName: "Hetzner Online GmbH")

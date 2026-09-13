@@ -8,6 +8,19 @@ enum WindowCenteredEmptyStateLayout {
 }
 
 extension View {
+    /// Keep native toolbar scroll tracking alive while the screen has no rows.
+    func scrollableEmptyState() -> some View {
+        GeometryReader { geometry in
+            ScrollView {
+                self
+                    .padding(.top, WindowCenteredEmptyStateLayout.unifiedToolbarHeight)
+                    .frame(maxWidth: .infinity, minHeight: geometry.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .ignoresSafeArea(.container, edges: .top)
+    }
+
     func windowCenteredEmptyState() -> some View {
         offset(y: WindowCenteredEmptyStateLayout.verticalOffset)
     }

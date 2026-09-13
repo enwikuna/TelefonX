@@ -44,14 +44,26 @@ struct HistoryRow: View {
     let scheduleReminder: (CallRecord) -> Void
     let deleteSelection: () -> Void
     private var hasDestination: Bool { (try? CallDestination(record.remote)) != nil }
-    private var isBlocked: Bool { Routing.isBlocked(record.remote, rules: model.snapshot.blocks, anonymous: false) }
+    private var blockedSymbol: String? {
+        HistoryPresentation.blockedSymbol(for: record.remote, rules: model.snapshot.blocks)
+    }
+    private var isBlocked: Bool { blockedSymbol != nil }
 
     var body: some View {
         HStack(spacing: HistoryRowLayout.avatarTextSpacing) {
             ContactAvatar(contact: model.displayContact(for: record.remote))
             VStack(alignment: .leading, spacing: 5) {
-                Text(model.displayName(record.remote)).font(.body.weight(.semibold)).lineLimit(1)
-                    .foregroundStyle(record.outcome == .missed ? .red : .primary)
+                HStack(spacing: 5) {
+                    Text(model.displayName(record.remote)).font(.body.weight(.semibold)).lineLimit(1)
+                        .foregroundStyle(record.outcome == .missed ? .red : .primary)
+                    if let blockedSymbol {
+                        Image(systemName: blockedSymbol)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .fixedSize()
+                            .accessibilityLabel("Blocked")
+                    }
+                }
                 HStack(spacing: 4) {
                     Image(systemName: record.incoming ? "arrow.down.left" : "arrow.up.right")
                         .font(.system(size: 10, weight: .medium))

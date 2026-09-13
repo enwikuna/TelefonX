@@ -4,6 +4,11 @@ import TelefonDomain
 import TelefonData
 
 @MainActor enum FileActions {
+    static func exportHistoryCSV(_ model: PhoneModel) {
+        save(Data(HistoryCSV.encode(model.snapshot.history, displayName: model.displayName).utf8),
+             name: L10n.text("TelefonX Recents.csv"), type: .commaSeparatedText, model: model)
+    }
+
     static func exportRemindersCSV(_ model: PhoneModel) {
         save(Data(RemindersCSV.encode(model.snapshot.reminders).utf8),
              name: L10n.text("TelefonX Callbacks.csv"), type: .commaSeparatedText, model: model)

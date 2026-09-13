@@ -10,13 +10,18 @@ import Testing
         scroll.contentInsets.top = 180
         scroll.fadeHeight = 40
         scroll.tile()
-        #expect(scroll.contentView.layer?.mask != nil)
+        let mask = try #require(scroll.layer?.mask)
+        let gradient = try #require(mask as? CAGradientLayer)
+        let colors = try #require(gradient.colors as? [CGColor])
+        #expect(scroll.contentView.layer?.mask == nil)
+        #expect(mask.frame == scroll.layer?.bounds)
+        #expect(colors.map(\.alpha) == [1, 1, 0.42, 0.14, 0.03, 0, 0])
         scroll.contentView.scroll(to: NSPoint(x: 0, y: 320))
         scroll.reflectScrolledClipView(scroll.contentView)
-        let mask = try #require(scroll.contentView.layer?.mask)
-        #expect(mask.frame == scroll.contentView.bounds)
+        #expect(scroll.layer?.mask === mask)
+        #expect(mask.frame == scroll.layer?.bounds)
         scroll.fadeHeight = nil
-        #expect(scroll.contentView.layer?.mask == nil)
+        #expect(scroll.layer?.mask == nil)
         #expect(scroll.contentView.bounds.minY == 320)
     }
 }

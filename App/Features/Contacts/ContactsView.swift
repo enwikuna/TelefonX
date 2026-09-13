@@ -51,6 +51,7 @@ struct ContactsView: View {
                                        systemImage: favoritesOnly ? "star" : "person.crop.rectangle",
                                        description: Text(search.isEmpty ? (favoritesOnly ? "Mark contacts as favorites in the address book." : "Your contacts stay on this Mac. Add a contact or import your address book.") : "Try another contact name or number."))
                     .windowCenteredEmptyState()
+                    .scrollableEmptyState()
             } else {
                 ContactTable(model: model, contacts: localContacts, appleContacts: appleContacts,
                              separatesSources: appleSourceAvailable, sourceFilter: effectiveSourceFilter,
@@ -61,9 +62,6 @@ struct ContactsView: View {
             }
         }
         .navigationSubtitle(countText)
-        // Empty windows have no scrolling content beneath the toolbar.
-        .toolbarBackgroundVisibility(contactCount == 0 && model.snapshot.accounts.isEmpty ? .hidden : .automatic,
-                                     for: .windowToolbar)
         .listToolbar(favoritesOnly ? "Favorites" : "Contacts", subtitle: countText,
                      state: $searchState, prompt: "Name or Number", showsSearch: hasSearchableContacts,
                      retainsActions: !favoritesOnly) {

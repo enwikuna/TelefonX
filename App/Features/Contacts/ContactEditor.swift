@@ -83,7 +83,7 @@ struct ContactEditor: View {
                         .frame(minHeight: 96, idealHeight: 110, maxHeight: 130)
                 }
             }.formStyle(.grouped)
-            if let error { Text(error).foregroundStyle(.red).font(.callout).padding(.horizontal, 22) }
+            if let error { Text(error).telefonDialogErrorStyle() }
             HStack {
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).disabled(importingPhoto)
                 Spacer()

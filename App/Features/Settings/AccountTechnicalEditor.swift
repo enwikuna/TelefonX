@@ -29,7 +29,7 @@ struct AccountTechnicalEditor: View {
                     Text("The best shared codec is normally selected automatically. SRTP requires TLS. TelefonX does not currently support custom STUN or TURN servers.").font(.caption).foregroundStyle(.secondary)
                 }
             }.formStyle(.grouped)
-            if let error { Text(error).foregroundStyle(.red).padding(.horizontal, 22) }
+            if let error { Text(error).telefonDialogErrorStyle() }
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).disabled(saving)

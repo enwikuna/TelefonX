@@ -6,6 +6,41 @@ import TelefonData
 @testable import TelefonX
 
 @Suite @MainActor struct PhoneModelTests {
+    @Test(arguments: [false, true])
+    func deletingALineOnlyRemovesItsHistoryWhenRequested(includingHistory: Bool) async throws {
+        let deleted = PhoneAccount(name: "Deleted", username: "deleted", domain: "sip.example.com", sortIndex: 0)
+        let retained = PhoneAccount(name: "Retained", username: "retained", domain: "sip.example.com", sortIndex: 1)
+        let deletedCall = CallRecord(
+            session: CallSession(handle: .init(slot: 1, generation: 1), accountID: deleted.id,
+                                 remote: "101", incoming: false, phase: .ended),
+            accountName: deleted.name
+        )
+        let retainedCall = CallRecord(
+            session: CallSession(handle: .init(slot: 2, generation: 1), accountID: retained.id,
+                                 remote: "102", incoming: true, phase: .ended),
+            accountName: retained.name
+        )
+        let contact = PhoneContact(name: "Ada", numbers: ["101"], preferredAccountID: deleted.id)
+        let repository = MemoryRepository()
+        repository.value.accounts = [deleted, retained]
+        repository.value.defaultAccountID = deleted.id
+        repository.value.contacts = [contact]
+        repository.value.history = [deletedCall, retainedCall]
+        let model = PhoneModel(engine: TestEngine(), credentials: PasswordCredentials(), repository: repository,
+                               purchases: testProPurchases())
+
+        try await model.deleteAccount(deleted.id, includingHistory: includingHistory)
+
+        #expect(model.snapshot.accounts.map(\.id) == [retained.id])
+        #expect(model.snapshot.accounts.first?.sortIndex == 0)
+        #expect(model.snapshot.defaultAccountID == retained.id)
+        #expect(model.snapshot.contacts.first?.id == contact.id)
+        #expect(model.snapshot.contacts.first?.preferredAccountID == nil)
+        #expect(model.snapshot.history.contains(where: { $0.id == retainedCall.id }))
+        #expect(model.snapshot.history.contains(where: { $0.id == deletedCall.id }) == !includingHistory)
+        #expect(repository.saveCount == 1)
+    }
+
     @Test func expiredProKeepsExtraLinesButLocksAndUnregistersThem() async throws {
         let first = PhoneAccount(name: "First", username: "first", domain: "sip.example.com", sortIndex: 0)
         let second = PhoneAccount(name: "Second", username: "second", domain: "sip.example.com", sortIndex: 1)

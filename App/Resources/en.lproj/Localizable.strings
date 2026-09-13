@@ -155,6 +155,7 @@
 "Delete Contact?" = "Delete Contact?";
 "Delete Last Character" = "Delete Last Character";
 "Delete Line and Password" = "Delete Line and Password";
+"Delete Line, Password, and Call History" = "Delete Line, Password, and Call History";
 "Delete Line …" = "Delete Line …";
 "Delete Line?" = "Delete Line?";
 "Delete …" = "Delete …";
@@ -455,6 +456,8 @@
 "The best shared codec is normally selected automatically. SRTP requires TLS. TelefonX does not currently support custom STUN or TURN servers." = "The best shared codec is normally selected automatically. SRTP requires TLS. TelefonX does not currently support custom STUN or TURN servers.";
 "The callback reminder will be permanently removed. Contacts and recents are retained." = "The callback reminder will be permanently removed. Contacts and recents are retained.";
 "The credentials are removed. Call history is retained." = "The credentials are removed. Call history is retained.";
+"Choose whether to retain or permanently delete this line's call history. Contacts are retained." = "Choose whether to retain or permanently delete this line's call history. Contacts are retained.";
+"The credentials are removed. Contacts are retained." = "The credentials are removed. Contacts are retained.";
 "The current call is placed on hold when you call." = "The current call is placed on hold when you call.";
 "The default applies to callbacks without an individual selection. You can override it in the callback dialog." = "The default applies to callbacks without an individual selection. You can override it in the callback dialog.";
 "The diagnostics export contains no passwords, phone numbers, contact names, or call content." = "The diagnostics export contains no passwords, phone numbers, contact names, or call content.";
@@ -574,6 +577,8 @@
 "Plan callbacks with dates, notes, and reminders. Your saved callbacks are retained and can be exported." = "Plan callbacks with dates, notes, and reminders. Your saved callbacks are retained and can be exported.";
 
 "Export Saved Callbacks …" = "Export Saved Callbacks …";
+"Export Saved Recents …" = "Export Saved Recents …";
+"TelefonX Recents.csv" = "TelefonX Recents.csv";
 
 "TelefonX Callbacks.csv" = "TelefonX Callbacks.csv";
 

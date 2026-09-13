@@ -4,6 +4,23 @@ import TelefonDomain
 @testable import TelefonData
 
 @Suite struct DataTests {
+    @Test func historyExportPreservesCallDetailsAndEscapesFormulas() {
+        let account = PhoneAccount(name: "Büro", username: "user", domain: "sip.example.com")
+        var session = CallSession(handle: CallHandle(slot: 1, generation: 1), accountID: account.id,
+                                  remote: "+49123", incoming: true, phase: .connected,
+                                  startedAt: Date(timeIntervalSince1970: 0))
+        session.answeredAt = Date(timeIntervalSince1970: 10)
+        session.endedAt = Date(timeIntervalSince1970: 71)
+        let record = CallRecord(session: session, accountName: account.name)
+        let csv = HistoryCSV.encode([record], displayName: { _ in "=Firma" })
+        #expect(csv.contains("'=Firma"))
+        #expect(csv.contains("'+49123"))
+        #expect(csv.contains("1970-01-01T00:00:00Z"))
+        #expect(csv.contains("\"61\",\"Angenommen\",\"Büro\""))
+        #expect(HistoryCSV.encode([], displayName: { $0 }) ==
+                "\"Name\",\"Telefon\",\"Richtung\",\"Zeitpunkt\",\"Dauer in Sekunden\",\"Status\",\"Leitung\",\"Codec\"")
+    }
+
     @Test func reminderExportPreservesNotesDatesAndCompletionAndEscapesFormulas() {
         var reminder = CallReminder(name: "=SUM(A1)", number: "+49123", note: "Angebot, Teil 1\n\"Zitat\"",
                                     dueAt: Date(timeIntervalSince1970: 0))

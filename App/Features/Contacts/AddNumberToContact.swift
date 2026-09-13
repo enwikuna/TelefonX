@@ -45,8 +45,8 @@ struct AddNumberToContact: View {
                 .padding(.horizontal, Layout.listOuterInset)
                 .overlay { if contacts.isEmpty { ContentUnavailableView("No Contacts", systemImage: "person.crop.circle") } }
             if let error {
-                Text(error).foregroundStyle(.red).font(.callout)
-                    .padding(.horizontal, Layout.dialogHorizontalInset)
+                Text(error)
+                    .telefonDialogErrorStyle(horizontalPadding: Layout.dialogHorizontalInset)
             }
             HStack {
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)

@@ -69,9 +69,9 @@ struct CallReminderEditor: View {
 
             if hasInvalidDueDate {
                 Text("Choose a Time in the Future.")
-                    .font(.callout).foregroundStyle(.red).padding(.horizontal, 22)
+                    .telefonDialogErrorStyle()
             } else if let error {
-                Text(error).font(.callout).foregroundStyle(.red).padding(.horizontal, 22)
+                Text(error).telefonDialogErrorStyle()
             }
 
             HStack {

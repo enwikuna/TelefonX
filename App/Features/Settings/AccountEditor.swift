@@ -36,7 +36,10 @@ struct AccountEditor: View {
                 }
                 RingtonePicker(selection: $account.ringtone)
             }.formStyle(.grouped)
-            if let error { Text(error).font(.callout).foregroundStyle(.red).padding(.horizontal, 22) }
+            if let error {
+                Text(error)
+                    .telefonDialogErrorStyle()
+            }
             HStack {
                 Label("Password in Keychain", systemImage: "key").font(.caption).foregroundStyle(.secondary)
                 Spacer()
