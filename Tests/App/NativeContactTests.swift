@@ -195,6 +195,7 @@ import TelefonDomain
         coordinator.update(view)
         table.reloadData()
 
+        #expect(CenterColumnSectionLayout.height == 30)
         #expect(coordinator.numberOfRows(in: table) == 4)
         #expect(table.rect(ofRow: 0).height == CenterColumnSectionLayout.height)
         #expect(table.rect(ofRow: 2).height == CenterColumnSectionLayout.height

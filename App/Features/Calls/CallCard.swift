@@ -1,9 +1,14 @@
 import SwiftUI
 import TelefonDomain
 
+private enum CallCardScrollTarget: Hashable {
+    case keypad
+}
+
 struct CallCard: View {
     @Environment(PhoneModel.self) private var model
     let call: CallSession
+    let contentTopInset: CGFloat
     let consultation: () -> Void
     @State private var showKeypad = false
     private var waiting: Bool { call.incoming && call.answeredAt == nil }
@@ -13,34 +18,46 @@ struct CallCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 24) {
-                    identity
-                    if !waiting {
-                        controls
-                        if showKeypad {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Keypad Tones").font(.caption.weight(.medium)).foregroundStyle(.secondary)
-                                Keypad(compact: true) { digit in
-                                    sendTone(digit)
-                                }.disabled(!canSendTones)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 24) {
+                        identity
+                        if !waiting {
+                            controls
+                            if showKeypad {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("Keypad Tones").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                                    Keypad(compact: true) { digit in
+                                        sendTone(digit)
+                                    }.disabled(!canSendTones)
+                                }
+                                .id(CallCardScrollTarget.keypad)
                             }
+                            multiCallActions
                         }
-                        multiCallActions
+                        AudioWarningView()
+                        if call.mediaError != 0 {
+                            Label("Audio Connection Interrupted", systemImage: "exclamationmark.triangle")
+                                .font(.callout).foregroundStyle(.orange)
+                        }
                     }
-                    AudioWarningView()
-                    if call.mediaError != 0 {
-                        Label("Audio Connection Interrupted", systemImage: "exclamationmark.triangle")
-                            .font(.callout).foregroundStyle(.orange)
+                    .padding(.horizontal, CallWorkspaceLayout.horizontalContentInset)
+                    .padding(.top, contentTopInset)
+                    .padding(.bottom, CallWorkspaceLayout.verticalContentInset)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .onChange(of: showKeypad) { _, visible in
+                    guard visible else { return }
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        proxy.scrollTo(CallCardScrollTarget.keypad, anchor: .bottom)
                     }
                 }
-                .padding(.horizontal, CallWorkspaceLayout.horizontalContentInset)
-                .padding(.vertical, CallWorkspaceLayout.verticalContentInset)
             }
             endControls
                 .padding(.horizontal, CallWorkspaceLayout.horizontalContentInset)
                 .padding(.vertical, CallWorkspaceLayout.verticalContentInset)
         }
+        .contentShape(Rectangle())
         .background {
             CallKeyboardShortcut(
                 enabled: connected && !model.callOperationPending,
@@ -58,7 +75,7 @@ struct CallCard: View {
             HStack {
                 Text(model.accountName(call.accountID))
                 if compactIdentity, let date = call.answeredAt { Spacer(); Text(date, style: .timer).monospacedDigit() }
-            }.font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+            }.secondaryContextLabelStyle().frame(maxWidth: .infinity)
             if !compactIdentity {
                 ContactAvatar(contact: model.displayContact(for: call.remote), size: 64).padding(.vertical, 8)
             }

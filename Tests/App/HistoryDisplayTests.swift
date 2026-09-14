@@ -80,13 +80,17 @@ import TelefonDomain
     }
 
     @Test func dialerStartsAtSameInsetInShortAndTallWindows() {
-        #expect(IdleDialerLayout.topInset(availableHeight: 400, contentHeight: 500) == 16)
-        #expect(IdleDialerLayout.topInset(availableHeight: 720, contentHeight: 500) == 16)
-        #expect(IdleDialerLayout.topInset(availableHeight: 1500, contentHeight: 500) == 16)
-        #expect(IdleDialerLayout.topInset(availableHeight: 720, contentHeight: 680) == 16)
+        #expect(IdleDialerLayout.topInset(availableHeight: 400, contentHeight: 500) == 12)
+        #expect(IdleDialerLayout.topInset(availableHeight: 720, contentHeight: 500) == 12)
+        #expect(IdleDialerLayout.topInset(availableHeight: 1500, contentHeight: 500) == 12)
+        #expect(IdleDialerLayout.topInset(availableHeight: 720, contentHeight: 680) == 12)
         #expect(CallWorkspaceLayout.horizontalContentInset == HistoryRowLayout.listContentHorizontalInset)
         #expect(CallWorkspaceLayout.verticalContentInset == 20)
-        #expect(LineSelectorLayout.labelLeadingInset == 4)
+        #expect(CallWorkspaceLayout.interScrollSpacing == 20)
+        #expect(LineSelectorLayout.labelLeadingInset == 2)
+        #expect(LineSelectorLayout.maximumFullyVisibleRows == 3)
+        #expect(LineSelectorLayout.nextRowPreviewHeight == 14)
+        #expect(LineSelectorLayout.overflowHeight == 130)
     }
 
     @Test func sidebarKeyboardNavigationStaysWithinPrimarySections() {

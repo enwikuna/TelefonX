@@ -26,7 +26,7 @@ enum HistoryRowLayout {
 }
 
 enum CenterColumnSectionLayout {
-    static let height: CGFloat = 34
+    static let height: CGFloat = 30
     static let titleBottomInset: CGFloat = 5
     static let interSectionSpacing: CGFloat = 16
 }

@@ -26,7 +26,7 @@ enum PreviewSupport {
 enum PreviewScenario: String, CaseIterable, Identifiable {
     case idle = "Dial", noLines = "No Line", connected = "Call", incoming = "Incoming", multiple = "Two Calls"
     case fiveCalls = "Five Calls"
-    case singleRecord = "One Call", multipleLines = "Multiple Lines", empty = "Empty Recents"
+    case singleRecord = "One Call", threeLines = "Three Lines", eightLines = "Eight Lines", empty = "Empty Recents"
     case avatars = "Contact Photos", favorites = "Favorites", reminders = "Call Reminders"
     case remindersNoLines = "Call Reminders Without a Line"
     case emptyHistoryWithLine = "Empty Recents With a Line", emptyHistoryNoLine = "Empty Recents Without a Line"
@@ -188,8 +188,18 @@ struct PreviewControls: View {
         account.name = "Home"; account.domain = "sip.example.com"; account.username = "preview"
         model.snapshot.accounts = [account]; model.selectedAccountID = account.id
         model.registrations = [account.id: .registered]
-        if scenario == .multipleLines {
-            for name in [localized("Büro", "Office"), localized("Standort Süd", "South Office")] {
+        if scenario == .threeLines || scenario == .eightLines {
+            var names = [localized("Büro", "Office"), localized("Standort Süd", "South Office")]
+            if scenario == .eightLines {
+                names += [
+                    localized("Mobil", "Mobile"),
+                    localized("Empfang", "Reception"),
+                    localized("Werkstatt", "Workshop"),
+                    localized("Lager", "Warehouse"),
+                    "Support"
+                ]
+            }
+            for name in names {
                 var additional = PhoneAccount()
                 additional.name = name; additional.domain = "sip.example.com"; additional.username = "preview"
                 model.snapshot.accounts.append(additional)
@@ -222,7 +232,7 @@ struct PreviewControls: View {
                 previewCall.held = index < 4
                 return previewCall
             }
-        case .idle, .singleRecord, .multipleLines, .empty, .avatars, .favorites, .reminders: model.calls = []
+        case .idle, .singleRecord, .threeLines, .eightLines, .empty, .avatars, .favorites, .reminders: model.calls = []
         case .noLines, .remindersNoLines,
              .emptyHistoryWithLine, .emptyHistoryNoLine, .emptyRemindersWithLine, .emptyRemindersNoLine,
              .emptyFavoritesWithLine, .emptyFavoritesNoLine, .emptyContactsWithLine, .emptyContactsNoLine: break

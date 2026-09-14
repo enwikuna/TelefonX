@@ -14,12 +14,18 @@ struct ListToolbarTitle: ToolbarContent {
     private var label: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(L10n.text(title)).font(.headline)
-            Text(subtitle).font(.caption2).foregroundStyle(.secondary)
+            Text(subtitle).secondaryContextLabelStyle()
         }
         .padding(.leading, Self.contentAlignmentOffset)
         .fixedSize(horizontal: true, vertical: false)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("list-toolbar-title")
+    }
+}
+
+extension View {
+    func secondaryContextLabelStyle() -> some View {
+        font(.caption2).foregroundStyle(.secondary)
     }
 }
 

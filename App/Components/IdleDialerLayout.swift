@@ -5,7 +5,7 @@ struct IdleDialerLayout: Layout {
     let availableHeight: CGFloat
 
     static func topInset(availableHeight: CGFloat, contentHeight: CGFloat) -> CGFloat {
-        16
+        12
     }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {

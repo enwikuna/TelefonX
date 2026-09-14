@@ -12,13 +12,29 @@ struct CallWorkspace: View {
     var body: some View {
         Group {
             if let call = selected {
-                VStack(spacing: 0) {
-                    if presentedCalls.count > 1 {
-                        participantSwitcher
-                            .padding(.horizontal, CallWorkspaceLayout.horizontalContentInset)
-                            .padding(.top, CallWorkspaceLayout.verticalContentInset)
+                GeometryReader { geometry in
+                    VStack(spacing: 0) {
+                        if presentedCalls.count > 1 {
+                            participantSwitcher
+                                .padding(
+                                    .top,
+                                    geometry.safeAreaInsets.top + CallWorkspaceLayout.participantVisualTopInset
+                                )
+                                .clipped()
+                            Color.clear
+                                .frame(height: CallWorkspaceLayout.interScrollSpacing)
+                                .contentShape(Rectangle())
+                        }
+                        CallCard(
+                            call: call,
+                            contentTopInset: presentedCalls.count == 1
+                                ? geometry.safeAreaInsets.top + CallWorkspaceLayout.singleCallVisualTopInset
+                                : 0,
+                            consultation: { consultation = true }
+                        )
+                        .id(call.handle)
                     }
-                    CallCard(call: call, consultation: { consultation = true }).id(call.handle)
+                    .ignoresSafeArea(.container, edges: .top)
                 }
             } else {
                 GeometryReader { geometry in
@@ -28,6 +44,7 @@ struct CallWorkspace: View {
                                 .padding(.horizontal, CallWorkspaceLayout.horizontalContentInset)
                         }
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
             }
         }
@@ -50,15 +67,15 @@ struct CallWorkspace: View {
     @ViewBuilder private var participantSwitcher: some View {
         let visibleRows = min(presentedCalls.count, 3)
         let height = CGFloat(visibleRows) * 58 + 4
-        if presentedCalls.count > visibleRows {
-            ScrollView {
-                callSwitcher.padding(2)
-            }
-            .scrollEdgeEffectHidden(for: .top)
-            .frame(height: height)
-        } else {
-            callSwitcher.padding(2).frame(height: height)
+        ScrollView {
+            callSwitcher
+                .padding(.vertical, 2)
+                .padding(.horizontal, CallWorkspaceLayout.horizontalContentInset)
         }
+        .scrollBounceBehavior(.basedOnSize)
+        .scrollEdgeEffectHidden(for: .top)
+        .frame(height: height)
+        .contentShape(Rectangle())
     }
 
     private var callSwitcher: some View {
@@ -90,6 +107,9 @@ struct CallWorkspace: View {
 enum CallWorkspaceLayout {
     static let horizontalContentInset: CGFloat = 16
     static let verticalContentInset: CGFloat = 20
+    static let participantVisualTopInset: CGFloat = 12
+    static let singleCallVisualTopInset: CGFloat = 3
+    static let interScrollSpacing: CGFloat = 20
 }
 
 

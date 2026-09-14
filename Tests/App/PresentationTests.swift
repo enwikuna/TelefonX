@@ -143,6 +143,18 @@ import TelefonDomain
         #expect(model.snapshot.history.isEmpty)
     }
 
+    @Test @MainActor func linePreviewScenariosExposeExactAccountCounts() {
+        let model = PreviewFixtures.makeModel()
+
+        PreviewFixtures.apply(.threeLines, to: model)
+        #expect(model.snapshot.accounts.count == 3)
+        #expect(model.registrations.count == 3)
+
+        PreviewFixtures.apply(.eightLines, to: model)
+        #expect(model.snapshot.accounts.count == 8)
+        #expect(model.registrations.count == 8)
+    }
+
     @Test @MainActor func remindersWithoutLineRetainsContentButCannotShowPhoneWorkspace() {
         let model = PreviewFixtures.makeModel()
         PreviewFixtures.apply(.remindersNoLines, to: model)
