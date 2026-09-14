@@ -15,7 +15,7 @@ TelefonX is used in a production environment.
 ## Free and Pro
 
 TelefonX connects your Mac to compatible SIP providers and brings calling,
-contacts and call organisation together in one native app. The free version
+contacts and call organization together in one native app. The free version
 includes the following features:
 
 | Feature | Description |
@@ -29,7 +29,7 @@ includes the following features:
 | Ringtones for Each Line | Assign an included ringtone to each SIP line and test its output directly in TelefonX. |
 | Local Contacts | Create and manage contacts with multiple numbers, photos, groups, notes and a preferred line. |
 | Apple Contacts | Display Apple Contacts as a read-only source or copy them into TelefonX as independent contacts. |
-| Favourites | Mark frequently used contacts as favourites and reach the preferred number more quickly. |
+| Favorites | Mark frequently used contacts as favorites and reach the preferred number more quickly. |
 | Call History | Search and filter incoming, outgoing, missed, declined and blocked calls. |
 | Call Blocking | Block individual phone numbers, SIP addresses or anonymous callers across all configured lines. |
 | macOS Services and Phone Links | Use selected numbers from other apps or open `tel:`, `sip:` and `sips:` links directly with TelefonX. |
@@ -45,7 +45,7 @@ TelefonX Pro adds these features:
 | --- | --- |
 | Multiple SIP Lines | Add more SIP lines, keep them registered in parallel and choose the appropriate line for each call. |
 | Callback Reminders | Schedule callbacks with a date, note and optional line and receive a local reminder. |
-| Outgoing Dialling Rules | Route numbers automatically through a chosen SIP line using configurable prefixes. |
+| Outgoing Dialing Rules | Route numbers automatically through a chosen SIP line using configurable prefixes. |
 | Contact Import and Export | Import and export local TelefonX contacts as CSV files. |
 | Custom Ringtones and Hold Music | Use your own audio files as ringtones or play custom music while the other party is on hold. |
 | Public Business Lookup | Optionally add matching Apple Maps business names to unknown public phone numbers. |
