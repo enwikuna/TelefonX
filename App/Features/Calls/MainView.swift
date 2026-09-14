@@ -3,6 +3,8 @@ import TelefonDomain
 
 struct MainView: View {
     @Environment(PhoneModel.self) private var model
+    @Environment(SettingsNavigation.self) private var settingsNavigation
+    @Environment(\.openSettings) private var openSettings
     private let initialSection: PhoneSection?
     @State private var section: PhoneSection?
     @State private var searchStates = SectionSearchStates()
@@ -98,7 +100,12 @@ struct MainView: View {
                     Text("Connect your first SIP line.\nCalls, contacts, and every location in one place.")
                 } actions: {
                     VStack(spacing: 10) {
-                        SettingsLink { Text("Configure a Line in Settings …") }
+                        Button {
+                            settingsNavigation.selection = .lines
+                            openSettings()
+                        } label: {
+                            Text("Configure a Line in Settings …")
+                        }
                             .telefonButtonStyle(.prominent)
                         if !model.snapshot.history.isEmpty {
                             Button("Export Saved Recents …") { FileActions.exportHistoryCSV(model) }

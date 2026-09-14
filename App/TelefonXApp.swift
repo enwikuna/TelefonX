@@ -3,12 +3,15 @@ import SwiftUI
 @main struct TelefonXApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model = PreviewSupport.makeModel()
+    @State private var settingsNavigation = SettingsNavigation()
     #if DEBUG
     @State private var previewPresentation = PreviewPresentation()
     #endif
     var body: some Scene {
         Window("TelefonX", id: "main") {
-            rootView.environment(model)
+            rootView
+                .environment(model)
+                .environment(settingsNavigation)
                 .task { if !PreviewSupport.enabled { delegate.model = model; await model.start() } }
                 .task { if !PreviewSupport.enabled { await model.purchases.start() } }
                 .onOpenURL { if $0.host != "show" { model.prepareDial($0.absoluteString) } }
@@ -61,7 +64,12 @@ import SwiftUI
         .windowResizability(.contentSize)
         .restorationBehavior(.disabled)
         .defaultLaunchBehavior(.suppressed)
-        Settings { SettingsView().environment(model).disabled(PreviewSupport.enabled) }
+        Settings {
+            SettingsView()
+                .environment(model)
+                .environment(settingsNavigation)
+                .disabled(PreviewSupport.enabled)
+        }
         MenuBarExtra("TelefonX", systemImage: "phone.fill", isInserted: .constant(!PreviewSupport.enabled)) {
             MenuBarView().environment(model)
         }

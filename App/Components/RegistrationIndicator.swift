@@ -30,11 +30,11 @@ struct RegistrationIndicator: View {
     private var color: Color {
         switch state {
         case .registered:
-            .green
+            TelephonyColors.connected
         case .registering:
-            .orange
+            TelephonyColors.pending
         case .failed:
-            .red
+            TelephonyColors.failed
         case .disabled, .offline:
             .secondary
         }

@@ -179,13 +179,17 @@ struct CallCard: View {
             HStack(spacing: 10) {
                 Button { Task { await model.hangup(call) } } label: {
                     Label(L10n.text(waiting ? "Decline" : "Hang Up"), systemImage: "phone.down.fill")
-                        .font(.headline).frame(maxWidth: .infinity).frame(height: 44)
-                }.telefonButtonStyle(.prominent).tint(.red).accessibilityIdentifier("hangup-call")
+                        .font(.headline).foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity).frame(height: 44)
+                }.telefonButtonStyle(.prominent).tint(TelephonyColors.end)
+                    .accessibilityIdentifier("hangup-call")
                 if waiting {
                     Button { Task { await model.answer(call) } } label: {
                         Label("Answer", systemImage: "phone.fill")
-                            .font(.headline).frame(maxWidth: .infinity).frame(height: 44)
-                    }.telefonButtonStyle(.prominent).tint(.green).disabled(model.callOperationPending)
+                            .font(.headline).foregroundStyle(Color.white)
+                            .frame(maxWidth: .infinity).frame(height: 44)
+                    }.telefonButtonStyle(.prominent).tint(TelephonyColors.call)
+                        .disabled(model.callOperationPending)
                 }
             }.buttonBorderShape(.roundedRectangle(radius: 14))
         }

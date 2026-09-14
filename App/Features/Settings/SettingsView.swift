@@ -1,17 +1,42 @@
 import SwiftUI
 
+enum SettingsSection: Hashable {
+    case general
+    case lines
+    case audio
+    case rules
+    case data
+}
+
+@Observable @MainActor final class SettingsNavigation {
+    var selection: SettingsSection = .general
+}
+
 struct SettingsView: View {
     @Environment(PhoneModel.self) private var model
+    @Environment(SettingsNavigation.self) private var navigation
 
     var body: some View {
-        TabView {
-            GeneralSettings().tabItem { Label("General", systemImage: "gearshape") }
-            AccountsSettings().tabItem { Label("Lines", systemImage: "network") }
-            AudioSettings().tabItem { Label("Audio", systemImage: "headphones") }
-            RulesSettings().tabItem { Label("Rules", systemImage: "line.3.horizontal.decrease.circle") }
-            DataSettings().tabItem { Label("Data & Diagnostics", systemImage: "externaldrive") }
+        @Bindable var navigation = navigation
+        TabView(selection: $navigation.selection) {
+            GeneralSettings()
+                .tabItem { Label("General", systemImage: "gearshape") }
+                .tag(SettingsSection.general)
+            AccountsSettings()
+                .tabItem { Label("Lines", systemImage: "network") }
+                .tag(SettingsSection.lines)
+            AudioSettings()
+                .tabItem { Label("Audio", systemImage: "headphones") }
+                .tag(SettingsSection.audio)
+            RulesSettings()
+                .tabItem { Label("Rules", systemImage: "line.3.horizontal.decrease.circle") }
+                .tag(SettingsSection.rules)
+            DataSettings()
+                .tabItem { Label("Data & Diagnostics", systemImage: "externaldrive") }
+                .tag(SettingsSection.data)
         }
         .frame(width: 680, height: 570)
+        .settingsWindowToolbarAppearanceOnMacOS27()
         .alert(
             "TelefonX",
             isPresented: Binding(

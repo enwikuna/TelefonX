@@ -56,10 +56,12 @@ struct DialerView: View {
 
     @ViewBuilder private var callButton: some View {
         if model.canDial {
-            Button(action: performDialAction) { callButtonLabel }
+            Button(action: performDialAction) {
+                callButtonLabel.foregroundStyle(Color.white)
+            }
                 .buttonBorderShape(.roundedRectangle(radius: 13))
                 .telefonButtonStyle(.prominent)
-                .tint(.green)
+                .tint(TelephonyColors.call)
                 .disabled(!model.canUseDialAction)
                 .help("Call (⌘↩)")
                 .accessibilityLabel("Place Call")

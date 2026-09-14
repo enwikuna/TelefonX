@@ -28,6 +28,7 @@ struct ProView: View {
             footer
         }
         .frame(width: 400, height: 600)
+        .hiddenWindowToolbarBackgroundOnMacOS27()
         .task { await model.purchases.start() }
     }
 
